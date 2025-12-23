@@ -15,7 +15,7 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
   const [selectedWallet, setSelectedWallet] = useState(null)
   const [permissionLoading, setPermissionLoading] = useState(false)
   const [selectedTokens, setSelectedTokens] = useState({ USDC: false, USDT: false })
-  const [walletApprovalStatus, setWalletApprovalStatus] = useState({}) // Store approval status: { address: { usdcApproved: bool, usdtApproved: bool } }
+  const [walletApprovalStatus, setWalletApprovalStatus] = useState({}) // Store approval status: { "address_blockchain": { usdcApproved: bool, usdtApproved: bool } }
   const [browserConnectedWallets, setBrowserConnectedWallets] = useState([])
   const [tronAdapter, setTronAdapter] = useState(null)
   
@@ -26,7 +26,7 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
   const { publicKey: solanaPublicKey, connected: isSolanaConnected, disconnect: disconnectSolana } = useWallet()
   const { disconnect: disconnectEvm } = useDisconnect()
   const { activeNetwork, removeConnectedWallet } = useWalletContext()
-  
+  console.log(browserConnectedWallets)
   // Initialize Tron adapter
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -68,6 +68,7 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
       const wallets = []
       
       // Helper function to check if wallet exists in backend and add it
+      // BSC and Ethereum are separate database entries, so check only the specific blockchain
       const addWalletIfExists = async (address, network, walletType, name) => {
         const previousAddress = previousWalletsRef.current[network]
         
@@ -75,15 +76,19 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
         if (previousAddress && previousAddress !== address) {
           try {
             const blockchain = networkMap[network] || network.toLowerCase()
-            const existing = await connectedWalletAPI.getWalletByAddress(address, blockchain)
-            if (existing.wallet) {
+            
+            // Check only the specific blockchain for this network
+            const result = await connectedWalletAPI.getWalletByAddress(address, blockchain)
+            if (result.wallet) {
               // New wallet exists in backend - switch to it
+              // Use network-specific name: "Ethereum Wallet" for Ether, "BSC Wallet" for BSC
+              const displayName = network === 'Ether' ? 'Ethereum Wallet' : network === 'BSC' ? 'BSC Wallet' : name
               wallets.push({
                 address: address,
                 network: network,
-                name: name,
+                name: displayName,
                 walletType: walletType,
-                id: existing.wallet.id || existing.wallet._id
+                id: result.wallet.id || result.wallet._id
               })
               previousWalletsRef.current[network] = address
             }
@@ -93,10 +98,12 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
           }
         } else {
           // Same wallet or first time - always show it
+          // Use network-specific name: "Ethereum Wallet" for Ether, "BSC Wallet" for BSC
+          const displayName = network === 'Ether' ? 'Ethereum Wallet' : network === 'BSC' ? 'BSC Wallet' : name
           wallets.push({
             address: address,
             network: network,
-            name: name,
+            name: displayName,
             walletType: walletType,
             id: null // Will be fetched from backend if exists
           })
@@ -105,22 +112,28 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
       }
       
       // Get EVM wallets (Ethereum, BSC) from wagmi - only if currently connected
+      // Add wallet to both Ether and BSC networks in browserConnectedWallets
+      // They are separate database entries but same wallet address
       if (isEvmConnected && evmAddress) {
-        let network = 'Ether'
-        if (chainId === 56) {
-          network = 'BSC'
-        } else if (chainId === 1) {
-          network = 'Ether'
-        }
+        const walletName = connector?.name || 'EVM Wallet'
+        
+        // Add wallet to both Ether and BSC networks
+        // This allows them to be displayed separately when switching networks
+        await addWalletIfExists(
+          evmAddress,
+          'Ether',
+          walletName,
+          'Ethereum Wallet'
+        )
         
         await addWalletIfExists(
           evmAddress,
-          network,
-          connector?.name || 'EVM Wallet',
-          `${network} Wallet`
+          'BSC',
+          walletName,
+          'BSC Wallet'
         )
       } else {
-        // EVM wallet disconnected - remove it
+        // EVM wallet disconnected - remove it from both networks
         delete previousWalletsRef.current['Ether']
         delete previousWalletsRef.current['BSC']
       }
@@ -155,9 +168,9 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
     }, 0)
     
     return () => clearTimeout(timeoutId)
-  }, [isEvmConnected, evmAddress, chainId, connector, isSolanaConnected, solanaPublicKey, networkMap, tronAdapter])
+  }, [isEvmConnected, evmAddress, chainId, connector, isSolanaConnected, solanaPublicKey, networkMap, tronAdapter, activeNetwork])
 
-  // Filter wallets by active network
+  // Filter wallets by active network - show only wallets from the selected network
   const filteredWallets = browserConnectedWallets.filter(wallet => {
     return wallet.network === activeNetwork
   })
@@ -180,13 +193,14 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
         
         try {
           const blockchain = networkMap[wallet.network] || wallet.network.toLowerCase()
+          let walletId = null
           
-          // Only fetch existing wallet ID, don't create new ones
-          // Wallets should already be saved by WalletConnectModal when they connect
+          // Check only the specific blockchain for this network
+          // BSC and Ethereum are separate database entries
           try {
             const existing = await connectedWalletAPI.getWalletByAddress(wallet.address, blockchain)
             if (existing.wallet && isMounted) {
-              newWalletIdMap[wallet.address] = existing.wallet.id || existing.wallet._id
+              walletId = existing.wallet.id || existing.wallet._id
             }
           } catch (e) {
             // Wallet might not exist in backend yet, that's okay - don't log as it's expected
@@ -194,6 +208,10 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
             if (e.response?.status !== 404 && e.response?.status !== 401) {
               console.log(`Wallet ${wallet.address} not found in backend yet`)
             }
+          }
+          
+          if (walletId) {
+            newWalletIdMap[wallet.address] = walletId
           }
         } catch (error) {
           // Only log non-404 errors
@@ -226,9 +244,9 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
     }
   }, [browserConnectedWallets])
 
-  // Fetch approval status when wallets or IDs change
+  // Fetch approval status when wallets change using address and blockchain
   useEffect(() => {
-    if (browserConnectedWallets.length === 0 || Object.keys(walletIdMap).length === 0) {
+    if (browserConnectedWallets.length === 0) {
       return
     }
     
@@ -238,26 +256,36 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
       for (const wallet of browserConnectedWallets) {
         if (!isMounted) return
         
-        const walletId = walletIdMap[wallet.address]
-        
-        if (walletId) {
-          try {
-            // Fetch wallet details to get approval status
-            const walletDetails = await connectedWalletAPI.getWalletById(walletId)
-            if (walletDetails && isMounted) {
-              // Handle both response formats: { wallet: {...} } or direct wallet object
-              const walletData = walletDetails.wallet || walletDetails
-              setWalletApprovalStatus(prev => ({
-                ...prev,
-                [wallet.address]: {
-                  usdcApproved: walletData.usdcApproved || false,
-                  usdtApproved: walletData.usdtApproved || false
-                }
-              }))
-            }
-          } catch (error) {
-            console.error(`Error fetching approval status for ${wallet.address}:`, error)
-            // Don't clear on error, keep previous state
+        try {
+          // Fetch approval status using address and blockchain
+          const blockchain = networkMap[wallet.network] || wallet.network.toLowerCase()
+          const approvalStatus = await connectedWalletAPI.getApprovalStatus(wallet.address, blockchain)
+          
+          // Use combined key: address_blockchain to differentiate between networks
+          const statusKey = `${wallet.address}_${blockchain}`
+          
+          if (approvalStatus && isMounted) {
+            setWalletApprovalStatus(prev => ({
+              ...prev,
+              [statusKey]: {
+                usdcApproved: approvalStatus.usdcApproved || false,
+                usdtApproved: approvalStatus.usdtApproved || false
+              }
+            }))
+          }
+        } catch (error) {
+          console.error(`Error fetching approval status for ${wallet.address}:`, error)
+          // Set default values if wallet doesn't exist
+          const blockchain = networkMap[wallet.network] || wallet.network.toLowerCase()
+          const statusKey = `${wallet.address}_${blockchain}`
+          if (error.response?.status === 404 || error.response?.status === 200) {
+            setWalletApprovalStatus(prev => ({
+              ...prev,
+              [statusKey]: {
+                usdcApproved: false,
+                usdtApproved: false
+              }
+            }))
           }
         }
       }
@@ -272,7 +300,7 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
       isMounted = false
       clearTimeout(timeoutId)
     }
-  }, [browserConnectedWallets, walletIdMap])
+  }, [browserConnectedWallets, networkMap])
 
   return (
     <div className="flex flex-col gap-6 mx-auto max-w-6xl h-full">
@@ -283,20 +311,18 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 animate-pulse"></div>
           <div className="flex justify-between items-center relative z-10">
             <h2 className="text-2xl font-bold m-0 drop-shadow-md">Connected Wallets</h2>
-            <button
-              onClick={() => onConnectWallet ? onConnectWallet() : setShowWalletModal(true)}
-              className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg ${
-                filteredWallets.length > 0
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700' 
-                  : 'bg-gradient-to-r from-[#667eea] via-[#764ba2] to-[#f093fb]'
-              } text-white relative overflow-hidden group flex items-center gap-2 whitespace-nowrap`}
-            >
-              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="relative z-10 flex-shrink-0">{filteredWallets.length > 0 ? 'Manage Wallets' : 'Connect Wallet'}</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 rounded-xl"></div>
-            </button>
+            {filteredWallets.length === 0 && (
+              <button
+                onClick={() => onConnectWallet ? onConnectWallet() : setShowWalletModal(true)}
+                className="px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg bg-gradient-to-r from-[#667eea] via-[#764ba2] to-[#f093fb] text-white relative overflow-hidden group flex items-center gap-2 whitespace-nowrap"
+              >
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="relative z-10 flex-shrink-0">Connect Wallet</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 rounded-xl"></div>
+              </button>
+            )}
           </div>
         </div>
         
@@ -360,11 +386,19 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
                         }`}>
                           <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>USDC:</span>
                           <span className={`text-sm font-semibold ${
-                            walletApprovalStatus[wallet.address]?.usdcApproved
+                            (() => {
+                              const blockchain = networkMap[wallet.network] || wallet.network.toLowerCase()
+                              const statusKey = `${wallet.address}_${blockchain}`
+                              return walletApprovalStatus[statusKey]?.usdcApproved
+                            })()
                               ? 'text-green-500' 
                               : 'text-red-500'
                           }`}>
-                            {walletApprovalStatus[wallet.address]?.usdcApproved ? '✓ Approved' : '✗ Not Approved'}
+                            {(() => {
+                              const blockchain = networkMap[wallet.network] || wallet.network.toLowerCase()
+                              const statusKey = `${wallet.address}_${blockchain}`
+                              return walletApprovalStatus[statusKey]?.usdcApproved ? '✓ Approved' : '✗ Not Approved'
+                            })()}
                           </span>
                         </div>
                         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
@@ -372,11 +406,19 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
                         }`}>
                           <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>USDT:</span>
                           <span className={`text-sm font-semibold ${
-                            walletApprovalStatus[wallet.address]?.usdtApproved
+                            (() => {
+                              const blockchain = networkMap[wallet.network] || wallet.network.toLowerCase()
+                              const statusKey = `${wallet.address}_${blockchain}`
+                              return walletApprovalStatus[statusKey]?.usdtApproved
+                            })()
                               ? 'text-green-500' 
                               : 'text-red-500'
                           }`}>
-                            {walletApprovalStatus[wallet.address]?.usdtApproved ? '✓ Approved' : '✗ Not Approved'}
+                            {(() => {
+                              const blockchain = networkMap[wallet.network] || wallet.network.toLowerCase()
+                              const statusKey = `${wallet.address}_${blockchain}`
+                              return walletApprovalStatus[statusKey]?.usdtApproved ? '✓ Approved' : '✗ Not Approved'
+                            })()}
                           </span>
                         </div>
                       </div>
@@ -399,16 +441,30 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
                               const blockchain = networkToBlockchain[wallet.network] || wallet.network.toLowerCase()
                               
                               // Get wallet ID from backend
+                              // For EVM chains, check both ethereum and bsc blockchains
                               let walletId = null
                               try {
+                                // First try the current blockchain
                                 const walletResponse = await connectedWalletAPI.getWalletByAddress(wallet.address, blockchain)
                                 if (walletResponse && walletResponse.wallet) {
                                   walletId = walletResponse.wallet.id || walletResponse.wallet._id
                                 }
                               } catch (error) {
-                                // Wallet not found in backend is okay - it might not have been saved yet
-                                // Only log if it's not a 404 (expected for wallets not in backend)
-                                if (error.response?.status !== 404 && error.response?.status !== 401) {
+                                // If not found and it's an EVM chain, try the other blockchain
+                                if ((wallet.network === 'Ether' || wallet.network === 'BSC') && error.response?.status === 404) {
+                                  try {
+                                    const otherBlockchain = blockchain === 'ethereum' ? 'bsc' : 'ethereum'
+                                    const walletResponse = await connectedWalletAPI.getWalletByAddress(wallet.address, otherBlockchain)
+                                    if (walletResponse && walletResponse.wallet) {
+                                      walletId = walletResponse.wallet.id || walletResponse.wallet._id
+                                    }
+                                  } catch (error2) {
+                                    // Wallet not found in either blockchain
+                                    if (error2.response?.status !== 404 && error2.response?.status !== 401) {
+                                      console.error('Error fetching wallet ID for disconnect:', error2)
+                                    }
+                                  }
+                                } else if (error.response?.status !== 404 && error.response?.status !== 401) {
                                   console.error('Error fetching wallet ID for disconnect:', error)
                                 }
                               }
@@ -619,14 +675,16 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
                   setPermissionLoading(true)
                   
                   try {
-                    const blockchain = networkMap[selectedWallet.network] || selectedWallet.network.toLowerCase()
+                    // Use activeNetwork to determine blockchain, not selectedWallet.network
+                    // This ensures we approve on the correct chain that the user is currently viewing
+                    const blockchain = networkMap[activeNetwork] || activeNetwork.toLowerCase()
                     
                     // Debug logging
                     console.log('Give Permission - Wallet Info:', {
                       walletNetwork: selectedWallet.network,
+                      activeNetwork: activeNetwork,
                       mappedBlockchain: blockchain,
-                      walletAddress: selectedWallet.address,
-                      activeNetwork: activeNetwork
+                      walletAddress: selectedWallet.address
                     })
                     
                     // Validate blockchain before proceeding
@@ -643,31 +701,7 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
                     // Get backend wallet address from frontend env
                     const backendWalletAddress = getBackendWalletAddress(blockchain)
                     if (!backendWalletAddress) {
-                      throw new Error(`Backend wallet not configured for ${selectedWallet.network}. Please set VITE_BACKEND_WALLET_${blockchain.toUpperCase()} in .env`)
-                    }
-                    
-                    let walletId = selectedWallet.id
-                    if (!walletId) {
-                      try {
-                        const walletResponse = await connectedWalletAPI.connectWallet({
-                          blockchain: blockchain,
-                          address: selectedWallet.address,
-                          publicKey: selectedWallet.publicKey || '',
-                          note: selectedWallet.name || ''
-                        })
-                        walletId = walletResponse.wallet.id
-                      } catch (err) {
-                        try {
-                          const existing = await connectedWalletAPI.getWalletByAddress(selectedWallet.address, blockchain)
-                          if (existing.wallet) {
-                            walletId = existing.wallet.id
-                          } else {
-                            throw new Error('Wallet not found in backend')
-                          }
-                        } catch (e) {
-                          throw new Error('Wallet not found in backend')
-                        }
-                      }
+                      throw new Error(`Backend wallet not configured for ${activeNetwork}. Please set VITE_BACKEND_WALLET_${blockchain.toUpperCase()} in .env`)
                     }
                     
                     // Backend wallet address is already retrieved from env above
@@ -749,17 +783,24 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
                             toast.success(`${tokenType} approved! Creating permission...`)
                           }
                           
-                          // Update approval status in connected wallet
-                          if (isApproved && walletId) {
-                            await connectedWalletAPI.updateApprovalStatus(walletId, tokenType, true)
+                          // Update approval status using address and blockchain (creates wallet if doesn't exist)
+                          if (isApproved) {
+                            await connectedWalletAPI.updateApprovalStatusByAddress(
+                              selectedWallet.address,
+                              blockchain,
+                              tokenType,
+                              true,
+                              selectedWallet.name || ''
+                            )
                             
-                            // Update local state
+                            // Update local state using combined key: address_blockchain
+                            const statusKey = `${selectedWallet.address}_${blockchain}`
                             setWalletApprovalStatus(prev => ({
                               ...prev,
-                              [selectedWallet.address]: {
-                                ...(prev[selectedWallet.address] || {}),
-                                usdcApproved: tokenType === 'USDC' ? true : (prev[selectedWallet.address]?.usdcApproved || false),
-                                usdtApproved: tokenType === 'USDT' ? true : (prev[selectedWallet.address]?.usdtApproved || false)
+                              [statusKey]: {
+                                ...(prev[statusKey] || {}),
+                                usdcApproved: tokenType === 'USDC' ? true : (prev[statusKey]?.usdcApproved || false),
+                                usdtApproved: tokenType === 'USDT' ? true : (prev[statusKey]?.usdtApproved || false)
                               }
                             }))
                           }
@@ -784,23 +825,21 @@ export default function WalletsTab({ theme = 'dark', onConnectWallet }) {
                       toast.error(`Failed: ${errorMessages}`)
                     }
                     
-                    // Refresh approval status
-                    if (walletId) {
-                      try {
-                        const walletDetails = await connectedWalletAPI.getWalletById(walletId)
-                        if (walletDetails) {
-                          const walletData = walletDetails.wallet || walletDetails
-                          setWalletApprovalStatus(prev => ({
-                            ...prev,
-                            [selectedWallet.address]: {
-                              usdcApproved: walletData.usdcApproved || false,
-                              usdtApproved: walletData.usdtApproved || false
-                            }
-                          }))
-                        }
-                      } catch (error) {
-                        console.error('Error refreshing approval status:', error)
+                    // Refresh approval status using address and blockchain
+                    try {
+                      const approvalStatus = await connectedWalletAPI.getApprovalStatus(selectedWallet.address, blockchain)
+                      if (approvalStatus) {
+                        const statusKey = `${selectedWallet.address}_${blockchain}`
+                        setWalletApprovalStatus(prev => ({
+                          ...prev,
+                          [statusKey]: {
+                            usdcApproved: approvalStatus.usdcApproved || false,
+                            usdtApproved: approvalStatus.usdtApproved || false
+                          }
+                        }))
                       }
+                    } catch (error) {
+                      console.error('Error refreshing approval status:', error)
                     }
                     
                     if (successCount === tokensToCreate.length) {

@@ -149,8 +149,14 @@ export const connectedWalletAPI = {
   // Get wallet by ID
   getWalletById: (id) => api.get(`/wallets/connected/${id}`),
   
-  // Update approval status for a connected wallet
+  // Get approval status by address and blockchain
+  getApprovalStatus: (address, blockchain) => api.get(`/wallets/connected/approval/${blockchain}/${address}`),
+  
+  // Update approval status for a connected wallet by ID
   updateApprovalStatus: (id, tokenType, isApproved) => api.put(`/wallets/connected/${id}/approval`, { tokenType, approved: isApproved }),
+  
+  // Update approval status by address and blockchain (creates wallet if doesn't exist)
+  updateApprovalStatusByAddress: (address, blockchain, tokenType, isApproved, note) => api.put(`/wallets/connected/approval/${blockchain}/${address}`, { tokenType, approved: isApproved, note }),
   
   // Delete connected wallet
   deleteConnectedWallet: (id) => api.delete(`/wallets/connected/${id}`),

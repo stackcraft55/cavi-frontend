@@ -164,8 +164,11 @@ const WalletConnectModal = ({ isOpen, onClose, theme = 'dark' }) => {
                 const address = accounts?.[0]
                 
                 if (address) {
-                  // Save to backend
+                  // Save to backend for both EVM chains (BSC and Ethereum)
+                  // They are separate database entries but same wallet address
                   const blockchain = networkToBlockchain[activeNetwork] || (activeNetwork === 'BSC' ? 'bsc' : 'ethereum')
+                  
+                  // Save wallet for current network
                   await connectedWalletAPI.connectWallet({
                     blockchain: blockchain,
                     address: address,
@@ -173,7 +176,28 @@ const WalletConnectModal = ({ isOpen, onClose, theme = 'dark' }) => {
                     note: `${connectorToUse.name} Wallet`
                   })
                   
-                  // Add to context
+                  // If connecting on EVM chain (Ether or BSC), also save to the other EVM chain
+                  if (activeNetwork === 'Ether' || activeNetwork === 'BSC') {
+                    const otherBlockchain = blockchain === 'ethereum' ? 'bsc' : 'ethereum'
+                    const otherNetwork = activeNetwork === 'Ether' ? 'BSC' : 'Ether'
+                    
+                    try {
+                      // Save to the other EVM blockchain as well
+                      await connectedWalletAPI.connectWallet({
+                        blockchain: otherBlockchain,
+                        address: address,
+                        publicKey: '',
+                        note: `${connectorToUse.name} Wallet`
+                      })
+                    } catch (error) {
+                      // If wallet already exists in other blockchain, that's okay
+                      if (error.response?.status !== 400 || !error.response?.data?.message?.includes('already')) {
+                        console.warn(`Failed to save wallet to ${otherNetwork}:`, error)
+                      }
+                    }
+                  }
+                  
+                  // Add to context for current network
                   addConnectedWallet({
                     address: address,
                     network: activeNetwork,
@@ -205,18 +229,67 @@ const WalletConnectModal = ({ isOpen, onClose, theme = 'dark' }) => {
     setTronModalVisible(true)
   }
 
-  // Save connected wallets when they connect
+  // Save connected wallets when they connect (this handles auto-connection scenarios)
+  // For EVM chains, save to both BSC and Ethereum as separate database entries
   useEffect(() => {
     if (isEvmConnected && evmAddress) {
       const network = activeNetwork === 'BSC' ? 'BSC' : 'Ether'
-      addConnectedWallet({
-        address: evmAddress,
-        network,
-        walletType: connector?.name || 'Unknown',
-        name: `${connector?.name || 'EVM'} Wallet`,
-      })
+      const blockchain = networkToBlockchain[network] || (network === 'BSC' ? 'bsc' : 'ethereum')
+      
+      // Check if wallet is already in context for this specific network
+      const alreadyAdded = connectedWallets.some(
+        w => w.address === evmAddress && w.network === network
+      )
+      
+      if (!alreadyAdded) {
+        // Save to backend for current network
+        connectedWalletAPI.connectWallet({
+          blockchain: blockchain,
+          address: evmAddress,
+          publicKey: '',
+          note: `${connector?.name || 'EVM'} Wallet`
+        }).then(() => {
+          // If connecting on EVM chain, also save to the other EVM chain
+          if (network === 'Ether' || network === 'BSC') {
+            const otherBlockchain = blockchain === 'ethereum' ? 'bsc' : 'ethereum'
+            
+            // Save to the other EVM blockchain as well
+            connectedWalletAPI.connectWallet({
+              blockchain: otherBlockchain,
+              address: evmAddress,
+              publicKey: '',
+              note: `${connector?.name || 'EVM'} Wallet`
+            }).catch(error => {
+              // If wallet already exists in other blockchain, that's okay
+              if (error.response?.status !== 400 || !error.response?.data?.message?.includes('already')) {
+                console.warn(`Failed to save wallet to other EVM chain:`, error)
+              }
+            })
+          }
+          
+          // Add to context
+          addConnectedWallet({
+            address: evmAddress,
+            network,
+            walletType: connector?.name || 'Unknown',
+            name: `${connector?.name || 'EVM'} Wallet`,
+          })
+        }).catch(error => {
+          // If wallet already exists, that's okay - still add to context
+          if (error.response?.status === 400 && error.response?.data?.message?.includes('already')) {
+            addConnectedWallet({
+              address: evmAddress,
+              network,
+              walletType: connector?.name || 'Unknown',
+              name: `${connector?.name || 'EVM'} Wallet`,
+            })
+          } else {
+            console.error('Error saving wallet to backend:', error)
+          }
+        })
+      }
     }
-  }, [isEvmConnected, evmAddress, activeNetwork, connector, addConnectedWallet])
+  }, [isEvmConnected, evmAddress, activeNetwork, connector, addConnectedWallet, connectedWallets])
 
   useEffect(() => {
     const saveSolanaWallet = async () => {
@@ -578,7 +651,13 @@ const WalletConnectModal = ({ isOpen, onClose, theme = 'dark' }) => {
         </div>
 
         {/* Connected Wallets List (Filtered by active network) */}
-        {connectedWallets.filter(w => w.network === activeNetwork).length > 0 && (
+        {connectedWallets.filter(w => {
+          // BSC and Ethereum share the same wallet, so show wallets from both when either is active
+          if (activeNetwork === 'Ether' || activeNetwork === 'BSC') {
+            return w.network === 'Ether' || w.network === 'BSC'
+          }
+          return w.network === activeNetwork
+        }).length > 0 && (
           <div className="mt-8 pt-6 border-t border-gray-600">
             <h4 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
               Connected Wallets ({activeNetwork})

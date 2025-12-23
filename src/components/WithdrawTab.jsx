@@ -28,15 +28,43 @@ export default function WithdrawTab({ theme = 'dark' }) {
   const { activeNetwork } = useWalletContext()
 
   // Fetch connected wallets (Wallet A) from backend, filtered by active network
+  // BSC and Ethereum share the same wallet, so fetch from both when either is active
   useEffect(() => {
     const fetchConnectedWallets = async () => {
       try {
         // Map network name to blockchain name
         const blockchain = networkToBlockchain[activeNetwork] || 'ethereum'
         
-        const response = await connectedWalletAPI.getAllWallets({ blockchain })
-        if (response.wallets && response.wallets.length > 0) {
-          const transformedWallets = response.wallets.map((wallet, index) => {
+        // If active network is Ether or BSC, fetch wallets from both blockchains
+        let blockchainsToFetch = [blockchain]
+        if (activeNetwork === 'Ether' || activeNetwork === 'BSC') {
+          blockchainsToFetch = ['ethereum', 'bsc']
+        }
+        
+        // Fetch wallets from all relevant blockchains
+        const allWallets = []
+        const seenAddresses = new Set()
+        
+        for (const chain of blockchainsToFetch) {
+          try {
+            const response = await connectedWalletAPI.getAllWallets({ blockchain: chain })
+            if (response.wallets && response.wallets.length > 0) {
+              // Deduplicate by address (same address might exist in both ethereum and bsc)
+              for (const wallet of response.wallets) {
+                const addressLower = wallet.address.toLowerCase()
+                if (!seenAddresses.has(addressLower)) {
+                  seenAddresses.add(addressLower)
+                  allWallets.push(wallet)
+                }
+              }
+            }
+          } catch (err) {
+            console.error(`Error fetching wallets for ${chain}:`, err)
+          }
+        }
+        
+        if (allWallets.length > 0) {
+          const transformedWallets = allWallets.map((wallet, index) => {
             const walletName = wallet.note || `Connected Wallet ${index + 1}`
             
             return {
