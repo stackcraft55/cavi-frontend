@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useWalletContext } from '../contexts/WalletContext'
 import logo from '../img/logo.png'
+import img from '../img/blockchain-ethereum.png'
 
 // Chain Card Component with image fallback
 const ChainCard = ({ chain, theme }) => {
@@ -56,7 +57,6 @@ export default function Landing({ theme = 'dark', setTheme }) {
     const user = localStorage.getItem('user')
     if (token && user) {
       setIsLoggedIn(true)
-      // Don't redirect, just show logged in state
     } else {
       setIsLoggedIn(false)
     }
@@ -225,23 +225,45 @@ export default function Landing({ theme = 'dark', setTheme }) {
         <section className="flex items-center justify-center px-4 py-20 md:py-32">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Left Column - Text Content */}
               <div>
                 <h2 className={`text-5xl md:text-6xl lg:text-7xl font-bold mb-6 ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  Manage Your{' '}
+                  Powering{' '}
                   <span className="bg-gradient-to-r from-[#667eea] via-[#764ba2] to-[#f093fb] bg-clip-text text-transparent">
-                    Crypto Wallets
+                    Multi-Chain Yields
                   </span>
                   <br />
-                  With Ease
+                  & Validator Rewards
                 </h2>
                 <p className={`text-xl md:text-2xl mb-8 ${
                   theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                 }`}>
-                  Connect, track, and manage your wallets across multiple blockchains. 
-                  Secure, simple, and powerful.
+                  Earn secure on-chain yields through virtual validator nodes, staking strategies, and transaction reward optimization across leading blockchains.
                 </p>
+                <div className="flex flex-wrap gap-4 mb-8">
+                  <span className={`px-4 py-2 rounded-lg font-semibold ${
+                    theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900 border border-gray-200'
+                  }`}>
+                    ✔ Ethereum
+                  </span>
+                  <span className={`px-4 py-2 rounded-lg font-semibold ${
+                    theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900 border border-gray-200'
+                  }`}>
+                    ✔ Binance Smart Chain
+                  </span>
+                  <span className={`px-4 py-2 rounded-lg font-semibold ${
+                    theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900 border border-gray-200'
+                  }`}>
+                    ✔ Solana
+                  </span>
+                  <span className={`px-4 py-2 rounded-lg font-semibold ${
+                    theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900 border border-gray-200'
+                  }`}>
+                    ✔ TRON
+                  </span>
+                </div>
                 <div className="flex flex-col sm:flex-row items-start gap-4">
                   {isLoggedIn ? (
                     <Link
@@ -257,34 +279,246 @@ export default function Landing({ theme = 'dark', setTheme }) {
                         to="/signup"
                         className="px-8 py-4 bg-gradient-to-r from-[#667eea] via-[#764ba2] to-[#f093fb] text-white rounded-xl font-bold text-lg transition-all duration-300 hover:shadow-glow hover:scale-105 relative overflow-hidden group"
                       >
-                        <span className="relative z-10">Get Started Free</span>
+                        <span className="relative z-10">Start Earning</span>
                         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                       </Link>
                       <Link
-                        to="/signin"
+                        to="/signup"
                         className={`px-8 py-4 rounded-xl font-bold text-lg border-2 transition-all duration-300 hover:scale-105 ${
                           theme === 'dark'
                             ? 'border-gray-600 text-gray-300 hover:border-[#667eea] hover:text-white hover:bg-gray-800'
                             : 'border-gray-300 text-gray-700 hover:border-[#667eea] hover:text-[#667eea] hover:bg-gray-50'
                         }`}
                       >
-                        Sign In
+                        Deploy Capital
+                      </Link>
+                      <Link
+                        to="/signup"
+                        className={`px-8 py-4 rounded-xl font-bold text-lg border-2 transition-all duration-300 hover:scale-105 ${
+                          theme === 'dark'
+                            ? 'border-gray-600 text-gray-300 hover:border-[#667eea] hover:text-white hover:bg-gray-800'
+                            : 'border-gray-300 text-gray-700 hover:border-[#667eea] hover:text-[#667eea] hover:bg-gray-50'
+                        }`}
+                      >
+                        Scale Securely
                       </Link>
                     </>
                   )}
                 </div>
               </div>
+              
+              {/* Right Column - Main Image */}
               <div className="relative">
-                <div className={`rounded-3xl overflow-hidden shadow-2xl ${
-                  theme === 'dark' ? 'bg-gradient-to-br from-[#667eea]/20 to-[#764ba2]/20' : 'bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10'
-                }`}>
+                <div className={`rounded-3xl overflow-hidden`}>
                   <div className="aspect-square flex items-center justify-center p-8">
-                    <div className="text-center">
-                      <div className="text-9xl mb-4">💼</div>
-                      <div className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                        Multi-Chain Wallet
-                      </div>
-                    </div>
+                    {/* Main hero image - Replace src with your image path */}
+                    <img
+                      src={img}
+                      alt="CAVI Multi-Chain Yields & Validator Rewards Platform"
+                      className="w-80 h-80"
+                      onError={(e) => {
+                        // Fallback to gradient background if image fails to load
+                        e.target.style.display = 'none'
+                        e.target.parentElement.className = `aspect-square flex items-center justify-center p-8 rounded-2xl ${
+                          theme === 'dark' ? 'bg-gradient-to-br from-[#667eea]/30 to-[#764ba2]/30' : 'bg-gradient-to-br from-[#667eea]/20 to-[#764ba2]/20'
+                        }`
+                        const fallback = document.createElement('div')
+                        fallback.className = 'text-center'
+                        fallback.innerHTML = `
+                          <div class="text-9xl mb-4">⚡</div>
+                          <div class="text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}">
+                            Multi-Chain Yields
+                          </div>
+                        `
+                        e.target.parentElement.appendChild(fallback)
+                      }}
+                    />
+                  </div>
+                </div>
+                {/* Decorative gradient overlay */}
+                <div className="absolute -z-10 top-8 left-8 w-full h-full rounded-3xl bg-gradient-to-br from-[#667eea]/20 to-[#764ba2]/20 blur-3xl"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* What We Do Section */}
+        <section className={`py-20 px-4 ${theme === 'dark' ? 'bg-gray-800/30' : 'bg-gray-50'}`}>
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <h3 className={`text-4xl md:text-5xl font-bold mb-4 ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                WHAT WE DO
+              </h3>
+              <p className={`text-2xl font-semibold mb-6 max-w-3xl mx-auto ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                One Platform. Multiple Blockchains. Continuous Yield.
+              </p>
+              <p className={`text-lg max-w-3xl mx-auto ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                We provide a unified platform that enables users to earn sustainable yields by participating in virtual validator services, native staking, and transaction reward mechanisms across multiple blockchains — without managing complex node infrastructure.
+              </p>
+              <p className={`text-lg max-w-3xl mx-auto mt-4 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                Your assets stay on-chain. Rewards are distributed transparently.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Core Features Section */}
+        <section className="py-20 px-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <h3 className={`text-4xl md:text-5xl font-bold mb-4 ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                CORE FEATURES
+              </h3>
+            </div>
+            <div className="space-y-12">
+              {/* Multi-Chain Compatibility */}
+              <div className={`p-8 rounded-2xl border transition-all duration-300 ${
+                theme === 'dark'
+                  ? 'bg-gray-800/50 border-gray-700'
+                  : 'bg-white border-gray-200'
+              }`}>
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="text-4xl">🔗</div>
+                  <div className="flex-1">
+                    <h4 className={`text-2xl font-bold mb-3 ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      Multi-Chain Compatibility
+                    </h4>
+                    <p className={`text-lg mb-4 ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Operate seamlessly across:
+                    </p>
+                    <ul className={`space-y-2 mb-4 ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
+                      <li>• Ethereum (ETH & ERC-20)</li>
+                      <li>• Binance Smart Chain (BNB & BEP-20)</li>
+                      <li>• Solana (SOL & SPL)</li>
+                      <li>• TRON (TRX & TRC-20)</li>
+                    </ul>
+                    <p className={`text-sm ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      One dashboard. One wallet. Multiple ecosystems.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Virtual Validator Node Services */}
+              <div className={`p-8 rounded-2xl border transition-all duration-300 ${
+                theme === 'dark'
+                  ? 'bg-gray-800/50 border-gray-700'
+                  : 'bg-white border-gray-200'
+              }`}>
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="text-4xl">⚙️</div>
+                  <div className="flex-1">
+                    <h4 className={`text-2xl font-bold mb-3 ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      Virtual Validator Node Services
+                    </h4>
+                    <p className={`text-lg mb-4 ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Access validator-level rewards without running physical infrastructure.
+                    </p>
+                    <ul className={`space-y-2 mb-4 ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
+                      <li>• Stake using native or stable tokens</li>
+                      <li>• Participate in consensus & transaction validation pools</li>
+                      <li>• Earn proportional validator rewards</li>
+                      <li>• Auto-compounding options available</li>
+                    </ul>
+                    <p className={`text-sm ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Ideal for users seeking validator exposure without hardware or DevOps overhead.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Yield Optimization Engine */}
+              <div className={`p-8 rounded-2xl border transition-all duration-300 ${
+                theme === 'dark'
+                  ? 'bg-gray-800/50 border-gray-700'
+                  : 'bg-white border-gray-200'
+              }`}>
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="text-4xl">📈</div>
+                  <div className="flex-1">
+                    <h4 className={`text-2xl font-bold mb-3 ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      Yield Optimization Engine
+                    </h4>
+                    <p className={`text-lg mb-4 ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Our smart routing system allocates capital across:
+                    </p>
+                    <ul className={`space-y-2 ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
+                      <li>• Native staking</li>
+                      <li>• Validator reward pools</li>
+                      <li>• Network transaction incentives</li>
+                    </ul>
+                    <p className={`text-sm mt-4 ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Maximize yield while maintaining protocol-level security and decentralization.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Earn Transaction Rewards */}
+              <div className={`p-8 rounded-2xl border transition-all duration-300 ${
+                theme === 'dark'
+                  ? 'bg-gray-800/50 border-gray-700'
+                  : 'bg-white border-gray-200'
+              }`}>
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="text-4xl">💰</div>
+                  <div className="flex-1">
+                    <h4 className={`text-2xl font-bold mb-3 ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      Earn Transaction Rewards
+                    </h4>
+                    <p className={`text-lg mb-4 ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Participate in network activity and earn from:
+                    </p>
+                    <ul className={`space-y-2 ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
+                      <li>• Block validation incentives</li>
+                      <li>• Transaction fee sharing</li>
+                      <li>• Network reward distributions</li>
+                    </ul>
+                    <p className={`text-sm mt-4 ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Rewards are paid directly in native tokens or approved stable assets on the same chain.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -292,97 +526,55 @@ export default function Landing({ theme = 'dark', setTheme }) {
           </div>
         </section>
 
-        {/* Features Section */}
+        {/* Supported Assets Section */}
         <section className={`py-20 px-4 ${theme === 'dark' ? 'bg-gray-800/30' : 'bg-gray-50'}`}>
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
+            <div className="text-center mb-12">
               <h3 className={`text-4xl md:text-5xl font-bold mb-4 ${
                 theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-                Powerful Features
+                SUPPORTED ASSETS
               </h3>
-              <p className={`text-xl max-w-2xl mx-auto ${
-                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                Everything you need to manage your crypto assets efficiently
-              </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className={`p-8 rounded-2xl border transition-all duration-300 hover:shadow-lg hover:scale-105 ${
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className={`p-8 rounded-2xl border ${
                 theme === 'dark'
-                  ? 'bg-gray-800/50 border-gray-700 hover:border-[#667eea]/50'
-                  : 'bg-white border-gray-200 hover:border-[#667eea]/50'
+                  ? 'bg-gray-800/50 border-gray-700'
+                  : 'bg-white border-gray-200'
               }`}>
-                <div className="text-5xl mb-4">🔐</div>
-                <h4 className={`text-2xl font-bold mb-3 ${
+                <h4 className={`text-xl font-bold mb-4 ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  Secure Wallet Management
+                  Native Tokens
                 </h4>
-                <p className={`mb-4 ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                <p className={`text-2xl font-semibold ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  Connect and manage wallets across Ethereum, BSC, Tron, and Solana with enterprise-grade security. Your private keys never leave your device.
+                  ETH • BNB • SOL • TRX
                 </p>
-                <ul className={`space-y-2 text-sm ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  <li>✓ Multi-chain support</li>
-                  <li>✓ Hardware wallet compatible</li>
-                  <li>✓ End-to-end encryption</li>
-                </ul>
               </div>
-
-              <div className={`p-8 rounded-2xl border transition-all duration-300 hover:shadow-lg hover:scale-105 ${
+              <div className={`p-8 rounded-2xl border ${
                 theme === 'dark'
-                  ? 'bg-gray-800/50 border-gray-700 hover:border-[#667eea]/50'
-                  : 'bg-white border-gray-200 hover:border-[#667eea]/50'
+                  ? 'bg-gray-800/50 border-gray-700'
+                  : 'bg-white border-gray-200'
               }`}>
-                <div className="text-5xl mb-4">📊</div>
-                <h4 className={`text-2xl font-bold mb-3 ${
+                <h4 className={`text-xl font-bold mb-4 ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  Real-Time Tracking
+                  Stable Tokens
                 </h4>
-                <p className={`mb-4 ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                <p className={`text-2xl font-semibold ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  Track your transactions, balances, and wallet activity in real-time with Alchemy integration. Get instant notifications for all activities.
+                  USDT • USDC (Chain-specific)
                 </p>
-                <ul className={`space-y-2 text-sm ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  <li>✓ Live balance updates</li>
-                  <li>✓ Transaction history</li>
-                  <li>✓ Activity monitoring</li>
-                </ul>
-              </div>
-
-              <div className={`p-8 rounded-2xl border transition-all duration-300 hover:shadow-lg hover:scale-105 ${
-                theme === 'dark'
-                  ? 'bg-gray-800/50 border-gray-700 hover:border-[#667eea]/50'
-                  : 'bg-white border-gray-200 hover:border-[#667eea]/50'
-              }`}>
-                <div className="text-5xl mb-4">💸</div>
-                <h4 className={`text-2xl font-bold mb-3 ${
-                  theme === 'dark' ? 'text-white' : 'text-gray-900'
-                }`}>
-                  Easy Withdrawals
-                </h4>
-                <p className={`mb-4 ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  Withdraw USDC and USDT tokens seamlessly with approval-based permissions for secure transfers. One-click withdrawals to any address.
-                </p>
-                <ul className={`space-y-2 text-sm ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  <li>✓ Token approvals</li>
-                  <li>✓ Multi-token support</li>
-                  <li>✓ Fast transactions</li>
-                </ul>
               </div>
             </div>
+            <p className={`text-center mt-8 text-sm ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              Assets remain on their native chain — no forced wrapping or unnecessary bridging.
+            </p>
           </div>
         </section>
 
@@ -393,24 +585,19 @@ export default function Landing({ theme = 'dark', setTheme }) {
               <h3 className={`text-4xl md:text-5xl font-bold mb-4 ${
                 theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-                How It Works
+                HOW IT WORKS
               </h3>
-              <p className={`text-xl max-w-2xl mx-auto ${
-                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                Get started in three simple steps
-              </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div className="text-center">
                 <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center text-3xl font-bold ${
                   theme === 'dark' 
                     ? 'bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white'
                     : 'bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white'
                 }`}>
-                  1
+                  1️⃣
                 </div>
-                <h4 className={`text-2xl font-bold mb-3 ${
+                <h4 className={`text-xl font-bold mb-3 ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
                   Connect Your Wallet
@@ -418,7 +605,7 @@ export default function Landing({ theme = 'dark', setTheme }) {
                 <p className={`${
                   theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                 }`}>
-                  Connect your existing wallet using MetaMask, Phantom, TronLink, or any supported wallet. Your keys stay secure.
+                  Use MetaMask, Trust Wallet, Phantom, or WalletConnect.
                 </p>
               </div>
               <div className="text-center">
@@ -427,17 +614,17 @@ export default function Landing({ theme = 'dark', setTheme }) {
                     ? 'bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white'
                     : 'bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white'
                 }`}>
-                  2
+                  2️⃣
                 </div>
-                <h4 className={`text-2xl font-bold mb-3 ${
+                <h4 className={`text-xl font-bold mb-3 ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  Grant Permissions
+                  Choose Network & Strategy
                 </h4>
                 <p className={`${
                   theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                 }`}>
-                  Approve token permissions for USDC and USDT. This allows secure withdrawals while maintaining full control.
+                  Select Ethereum, BSC, Solana, or TRON and your preferred earning model.
                 </p>
               </div>
               <div className="text-center">
@@ -446,25 +633,166 @@ export default function Landing({ theme = 'dark', setTheme }) {
                     ? 'bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white'
                     : 'bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white'
                 }`}>
-                  3
+                  3️⃣
                 </div>
-                <h4 className={`text-2xl font-bold mb-3 ${
+                <h4 className={`text-xl font-bold mb-3 ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  Start Managing
+                  Stake or Allocate Capital
                 </h4>
                 <p className={`${
                   theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                 }`}>
-                  Track balances, view transactions, create new wallets, and withdraw tokens - all from one intuitive dashboard.
+                  Deploy funds into validator services or yield pools.
+                </p>
+              </div>
+              <div className="text-center">
+                <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center text-3xl font-bold ${
+                  theme === 'dark' 
+                    ? 'bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white'
+                    : 'bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white'
+                }`}>
+                  4️⃣
+                </div>
+                <h4 className={`text-xl font-bold mb-3 ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Earn & Track Rewards
+                </h4>
+                <p className={`${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Monitor real-time rewards, APR, and transaction earnings from your dashboard.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Supported Blockchains Section */}
+        {/* Security & Transparency Section */}
         <section className={`py-20 px-4 ${theme === 'dark' ? 'bg-gray-800/30' : 'bg-gray-50'}`}>
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <h3 className={`text-4xl md:text-5xl font-bold mb-4 ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                SECURITY & TRANSPARENCY
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className={`p-8 rounded-2xl border text-center ${
+                theme === 'dark'
+                  ? 'bg-gray-800/50 border-gray-700'
+                  : 'bg-white border-gray-200'
+              }`}>
+                <div className="text-5xl mb-4">🔒</div>
+                <h4 className={`text-xl font-bold mb-3 ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Non-Custodial Architecture
+                </h4>
+                <p className={`${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Funds remain in smart contracts governed by protocol logic.
+                </p>
+              </div>
+              <div className={`p-8 rounded-2xl border text-center ${
+                theme === 'dark'
+                  ? 'bg-gray-800/50 border-gray-700'
+                  : 'bg-white border-gray-200'
+              }`}>
+                <div className="text-5xl mb-4">🔍</div>
+                <h4 className={`text-xl font-bold mb-3 ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
+                  On-Chain Verifiability
+                </h4>
+                <p className={`${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  All transactions, rewards, and validator activity are publicly verifiable.
+                </p>
+              </div>
+              <div className={`p-8 rounded-2xl border text-center ${
+                theme === 'dark'
+                  ? 'bg-gray-800/50 border-gray-700'
+                  : 'bg-white border-gray-200'
+              }`}>
+                <div className="text-5xl mb-4">🛡</div>
+                <h4 className={`text-xl font-bold mb-3 ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Network-Level Security
+                </h4>
+                <p className={`${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Built directly on Ethereum, BSC, Solana, and TRON consensus mechanisms.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Use Cases Section */}
+        <section className="py-20 px-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <h3 className={`text-4xl md:text-5xl font-bold mb-4 ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                USE CASES
+              </h3>
+            </div>
+            <div className={`p-8 rounded-2xl border ${
+              theme === 'dark'
+                ? 'bg-gray-800/50 border-gray-700'
+                : 'bg-white border-gray-200'
+            }`}>
+              <ul className={`space-y-3 text-lg ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                <li>• Passive income through blockchain validation</li>
+                <li>• Validator exposure without running nodes</li>
+                <li>• Stable-yield strategies using network rewards</li>
+                <li>• Multi-chain portfolio yield management</li>
+                <li>• Web3 funds & professional stakers</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* Why Choose Us Section */}
+        <section className={`py-20 px-4 ${theme === 'dark' ? 'bg-gray-800/30' : 'bg-gray-50'}`}>
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <h3 className={`text-4xl md:text-5xl font-bold mb-4 ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                WHY CHOOSE US
+              </h3>
+            </div>
+            <div className={`p-8 rounded-2xl border ${
+              theme === 'dark'
+                ? 'bg-gray-800/50 border-gray-700'
+                : 'bg-white border-gray-200'
+            }`}>
+              <ul className={`space-y-3 text-lg ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                <li>✔ Multi-Chain Native Support</li>
+                <li>✔ Validator-Grade Rewards</li>
+                <li>✔ No Hardware or Node Management</li>
+                <li>✔ Transparent On-Chain Earnings</li>
+                <li>✔ Designed for Individuals & Institutions</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* Supported Blockchains Section */}
+        <section className="py-20 px-4">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h3 className={`text-4xl md:text-5xl font-bold mb-4 ${
@@ -472,11 +800,6 @@ export default function Landing({ theme = 'dark', setTheme }) {
               }`}>
                 Supported Blockchains
               </h3>
-              <p className={`text-xl max-w-2xl mx-auto ${
-                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                Manage assets across the most popular blockchains
-              </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
@@ -491,151 +814,18 @@ export default function Landing({ theme = 'dark', setTheme }) {
           </div>
         </section>
 
-        {/* Security Section */}
-        <section className="py-20 px-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <h3 className={`text-4xl md:text-5xl font-bold mb-6 ${
-                  theme === 'dark' ? 'text-white' : 'text-gray-900'
-                }`}>
-                  Security First
-                </h3>
-                <p className={`text-lg mb-6 ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  Your security is our top priority. We implement industry-leading security measures to protect your assets.
-                </p>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      theme === 'dark' ? 'bg-[#667eea]/20' : 'bg-[#667eea]/10'
-                    }`}>
-                      <svg className="w-6 h-6 text-[#667eea]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className={`text-xl font-bold mb-2 ${
-                        theme === 'dark' ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        Non-Custodial
-                      </h4>
-                      <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
-                        We never store your private keys. You maintain full control of your assets.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      theme === 'dark' ? 'bg-[#667eea]/20' : 'bg-[#667eea]/10'
-                    }`}>
-                      <svg className="w-6 h-6 text-[#667eea]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className={`text-xl font-bold mb-2 ${
-                        theme === 'dark' ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        Encrypted Storage
-                      </h4>
-                      <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
-                        All sensitive data is encrypted using advanced encryption standards.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      theme === 'dark' ? 'bg-[#667eea]/20' : 'bg-[#667eea]/10'
-                    }`}>
-                      <svg className="w-6 h-6 text-[#667eea]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className={`text-xl font-bold mb-2 ${
-                        theme === 'dark' ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        Audit Ready
-                      </h4>
-                      <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
-                        Complete transaction history and audit trails for compliance and tracking.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="relative">
-                <div className={`rounded-3xl overflow-hidden shadow-2xl ${
-                  theme === 'dark' ? 'bg-gradient-to-br from-[#667eea]/20 to-[#764ba2]/20' : 'bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10'
-                }`}>
-                  <div className="aspect-square flex items-center justify-center p-8">
-                    <div className="text-center">
-                      <div className="text-9xl mb-4">🛡️</div>
-                      <div className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                        Enterprise Security
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Stats Section */}
-        <section className={`py-20 px-4 ${theme === 'dark' ? 'bg-gray-800/30' : 'bg-gray-50'}`}>
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              <div className="text-center">
-                <div className={`text-5xl font-bold mb-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent`}>
-                  4+
-                </div>
-                <div className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Blockchains
-                </div>
-              </div>
-              <div className="text-center">
-                <div className={`text-5xl font-bold mb-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent`}>
-                  100%
-                </div>
-                <div className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Non-Custodial
-                </div>
-              </div>
-              <div className="text-center">
-                <div className={`text-5xl font-bold mb-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent`}>
-                  24/7
-                </div>
-                <div className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Support
-                </div>
-              </div>
-              <div className="text-center">
-                <div className={`text-5xl font-bold mb-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent`}>
-                  ∞
-                </div>
-                <div className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Wallets
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* CTA Section */}
         <section className="py-20 px-4">
           <div className="max-w-4xl mx-auto text-center">
             <h3 className={`text-4xl md:text-5xl font-bold mb-6 ${
               theme === 'dark' ? 'text-white' : 'text-gray-900'
             }`}>
-              Ready to Get Started?
+              Ready to Start Earning?
             </h3>
             <p className={`text-xl mb-8 ${
               theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
             }`}>
-              Join thousands of users managing their crypto assets with CAVI
+              CAVI – One Platform. Multiple Blockchains. Real Yield
             </p>
             {isLoggedIn ? (
               <Link
@@ -685,4 +875,3 @@ export default function Landing({ theme = 'dark', setTheme }) {
     </div>
   )
 }
-
