@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useWalletContext } from '../contexts/WalletContext'
 import logo from '../img/logo.png'
-import img from '../img/blockchain-ethereum.png'
+import img from '../img/hero.png'
 
 // Chain Card Component with image fallback
 const ChainCard = ({ chain, theme }) => {
@@ -98,13 +98,8 @@ export default function Landing({ theme = 'dark', setTheme }) {
         theme === 'dark' ? 'border-gray-800' : 'border-gray-200'
       }`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+          <Link to="/" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
             <img src={logo} alt="CAVI Logo" className="h-10 w-auto" />
-            <h1 className={`text-2xl font-bold ${
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
-            }`}>
-              CAVI
-            </h1>
           </Link>
           <div className="flex items-center gap-3">
             {/* Theme Toggle - Always visible */}
@@ -315,7 +310,7 @@ export default function Landing({ theme = 'dark', setTheme }) {
                     <img
                       src={img}
                       alt="CAVI Multi-Chain Yields & Validator Rewards Platform"
-                      className="w-80 h-80"
+                      className="w-full"
                       onError={(e) => {
                         // Fallback to gradient background if image fails to load
                         e.target.style.display = 'none'
