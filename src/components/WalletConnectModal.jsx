@@ -370,7 +370,7 @@ const WalletConnectModal = ({ isOpen, onClose, theme = 'dark' }) => {
           </div>
         </div>
 
-        {/* Wallet Options */}
+        {/* Wallet Options - Using Native Modals */}
         <div className="space-y-3">
           {activeNetwork === 'Ether' || activeNetwork === 'BSC' ? (
             <div className="space-y-2">
@@ -390,18 +390,18 @@ const WalletConnectModal = ({ isOpen, onClose, theme = 'dark' }) => {
                       Chain ID: {chainId} ({chainId === 1 ? 'Ethereum' : chainId === 56 ? 'BSC' : 'Unknown'})
                     </div>
                     {chainId !== (activeNetwork === 'BSC' ? 56 : 1) && (
-              <button
+                      <button
                         onClick={() => switchChain({ chainId: activeNetwork === 'BSC' ? 56 : 1 })}
                         className={`mt-2 w-full px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                  theme === 'dark'
+                          theme === 'dark'
                             ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
                             : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                }`}
-              >
+                        }`}
+                      >
                         Switch to {activeNetwork}
                       </button>
                     )}
-                </div>
+                  </div>
                   <button
                     onClick={disconnectEvm}
                     className={`w-full px-4 py-2 rounded-lg border-2 transition-all duration-300 ${
@@ -412,49 +412,43 @@ const WalletConnectModal = ({ isOpen, onClose, theme = 'dark' }) => {
                   >
                     Disconnect
                   </button>
-                  </div>
+                </div>
               ) : (
-                /* Available Connectors */
+                /* Wagmi Connectors - Show all available connectors */
                 <div className="space-y-2 w-full">
                   {connectors && connectors.length > 0 ? (
-                    connectors
-                      .filter(c => {
-                        // Show all connectors, but prioritize ready ones
-                        // Some connectors might not be ready until clicked
-                        return true
-                      })
-                      .map((connector) => (
-                <button
-                          key={connector.id}
-                          onClick={() => handleEvmConnect(connector)}
-                          disabled={isPending}
-                  className={`w-full p-4 rounded-xl border-2 transition-all duration-300 flex items-center gap-4 ${
-                    theme === 'dark'
-                              ? 'border-gray-600 hover:border-[#667eea] hover:bg-gray-700/50 text-white disabled:opacity-50'
-                              : 'border-gray-200 hover:border-[#667eea] hover:bg-gray-50 text-gray-800 disabled:opacity-50'
-                  }`}
-                >
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
-                            {connector.id === 'metaMask' ? '🦊' : connector.id === 'injected' ? '🔷' : '💼'}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <div className={`font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
-                              {connector.name}
-                    </div>
-                    <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                              {connector.ready ? `Connect to ${activeNetwork}` : 'Click to connect'}
-                    </div>
-                            {!connector.ready && (
-                              <div className={`text-xs mt-1 ${theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600'}`}>
-                                May require wallet extension
-                  </div>
-                            )}
-                </div>
-                          {isPending && (
-                            <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                    connectors.map((connector) => (
+                      <button
+                        key={connector.id}
+                        onClick={() => handleEvmConnect(connector)}
+                        disabled={isPending}
+                        className={`w-full p-4 rounded-xl border-2 transition-all duration-300 flex items-center gap-4 ${
+                          theme === 'dark'
+                            ? 'border-gray-600 hover:border-[#667eea] hover:bg-gray-700/50 text-white disabled:opacity-50'
+                            : 'border-gray-200 hover:border-[#667eea] hover:bg-gray-50 text-gray-800 disabled:opacity-50'
+                        }`}
+                      >
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
+                          {connector.id === 'metaMask' ? '🦊' : connector.id === 'injected' ? '🔷' : '💼'}
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className={`font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                            {connector.name}
+                          </div>
+                          <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {connector.ready ? `Connect to ${activeNetwork}` : 'Click to connect'}
+                          </div>
+                          {!connector.ready && (
+                            <div className={`text-xs mt-1 ${theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                              May require wallet extension
+                            </div>
                           )}
-                        </button>
-                      ))
+                        </div>
+                        {isPending && (
+                          <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                        )}
+                      </button>
+                    ))
                   ) : (
                     <div className={`p-4 rounded-xl border-2 ${
                       theme === 'dark' ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200 bg-gray-50'
@@ -463,63 +457,123 @@ const WalletConnectModal = ({ isOpen, onClose, theme = 'dark' }) => {
                         <div className="font-semibold mb-2">No wallets available</div>
                         <div className="text-xs">
                           Please install MetaMask or another EVM-compatible wallet extension
-                  </div>
-                  </div>
-                </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
             </div>
           ) : activeNetwork === 'Solana' ? (
-            <button
-              onClick={handleSolanaConnect}
-              className={`w-full p-4 rounded-xl border-2 transition-all duration-300 flex items-center gap-4 ${
-                theme === 'dark'
-                  ? 'border-gray-600 hover:border-[#667eea] hover:bg-gray-700/50'
-                  : 'border-gray-200 hover:border-[#667eea] hover:bg-gray-50'
-              }`}
-            >
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
-                🟣
-              </div>
-              <div className="flex-1 text-left">
-                <div className={`font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
-                  Solana Wallets
+            <div className="space-y-2">
+              {isSolanaConnected && solanaPublicKey ? (
+                <div className="space-y-2">
+                  <div className={`p-4 rounded-xl border-2 ${
+                    theme === 'dark' ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div className={`text-sm font-semibold mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
+                      Connected: {wallet?.name || 'Solana Wallet'}
+                    </div>
+                    <div className={`text-xs font-mono ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {solanaPublicKey.toString()}
+                    </div>
+                  </div>
+                  <button
+                    onClick={disconnectSolana}
+                    className={`w-full px-4 py-2 rounded-lg border-2 transition-all duration-300 ${
+                      theme === 'dark'
+                        ? 'border-red-600 hover:border-red-500 hover:bg-red-900/50 text-red-400'
+                        : 'border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600'
+                    }`}
+                  >
+                    Disconnect
+                  </button>
                 </div>
-                <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Connect Phantom, Solflare, or other Solana wallets
-                </div>
-              </div>
-              {isSolanaConnected && solanaPublicKey && (
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              ) : (
+                <button
+                  onClick={handleSolanaConnect}
+                  className={`w-full p-4 rounded-xl border-2 transition-all duration-300 flex items-center gap-4 ${
+                    theme === 'dark'
+                      ? 'border-gray-600 hover:border-[#667eea] hover:bg-gray-700/50'
+                      : 'border-gray-200 hover:border-[#667eea] hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
+                    🟣
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className={`font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                      Connect Solana Wallet
+                    </div>
+                    <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Opens Solana wallet selection modal
+                    </div>
+                  </div>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               )}
-            </button>
+            </div>
           ) : activeNetwork === 'Tron' ? (
-            <button
-              onClick={handleTronConnect}
-              className={`w-full p-4 rounded-xl border-2 transition-all duration-300 flex items-center gap-4 ${
-                theme === 'dark'
-                  ? 'border-gray-600 hover:border-[#667eea] hover:bg-gray-700/50'
-                  : 'border-gray-200 hover:border-[#667eea] hover:bg-gray-50'
-              }`}
-            >
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white font-bold text-xl">
-                🔴
-              </div>
-              <div className="flex-1 text-left">
-                <div className={`font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
-                  TronLink
+            <div className="space-y-2">
+              {isTronConnected && tronAddress ? (
+                <div className="space-y-2">
+                  <div className={`p-4 rounded-xl border-2 ${
+                    theme === 'dark' ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div className={`text-sm font-semibold mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
+                      Connected: TronLink
+                    </div>
+                    <div className={`text-xs font-mono ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {tronAddress}
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (tronAdapter && isTronConnected) {
+                        try {
+                          await tronAdapter.disconnect()
+                        } catch (error) {
+                          console.error('Error disconnecting Tron wallet:', error)
+                        }
+                      }
+                    }}
+                    className={`w-full px-4 py-2 rounded-lg border-2 transition-all duration-300 ${
+                      theme === 'dark'
+                        ? 'border-red-600 hover:border-red-500 hover:bg-red-900/50 text-red-400'
+                        : 'border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600'
+                    }`}
+                  >
+                    Disconnect
+                  </button>
                 </div>
-                <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {tronAdapter?.state === 'Connected' && tronAdapter?.address
-                    ? `Connected: ${tronAdapter.address.slice(0, 6)}...${tronAdapter.address.slice(-4)}`
-                    : 'Connect using TronLink extension'}
-                </div>
-              </div>
-              {tronAdapter?.state === 'Connected' && tronAdapter?.address && (
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              ) : (
+                <button
+                  onClick={handleTronConnect}
+                  className={`w-full p-4 rounded-xl border-2 transition-all duration-300 flex items-center gap-4 ${
+                    theme === 'dark'
+                      ? 'border-gray-600 hover:border-[#667eea] hover:bg-gray-700/50'
+                      : 'border-gray-200 hover:border-[#667eea] hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white font-bold text-xl">
+                    🔴
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className={`font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                      Connect Tron Wallet
+                    </div>
+                    <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Opens Tron wallet selection modal
+                    </div>
+                  </div>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               )}
-            </button>
+            </div>
           ) : null}
         </div>
 

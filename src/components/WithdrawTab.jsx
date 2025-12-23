@@ -5,6 +5,7 @@ import { createdWalletAPI, connectedWalletAPI, withdrawAPI } from '../api/api'
 import { useWalletContext } from '../contexts/WalletContext'
 import { networkToBlockchain } from '../utils/tokenContracts'
 import { getUSDCUSDTBalances } from '../utils/tokenBalances'
+import { getNativeBalance } from '../utils/alchemyTransactions'
 
 export default function WithdrawTab({ theme = 'dark' }) {
   const [selectedWalletA, setSelectedWalletA] = useState(null)
@@ -13,6 +14,10 @@ export default function WithdrawTab({ theme = 'dark' }) {
   const [walletsA, setWalletsA] = useState([])
   const [walletsB, setWalletsB] = useState([])
   const [walletTokens, setWalletTokens] = useState([])
+  const [walletBBalances, setWalletBBalances] = useState(null) // Store balances for wallet B across all chains
+  const [loadingWalletB, setLoadingWalletB] = useState(false)
+  const [walletANativeBalance, setWalletANativeBalance] = useState(null) // Store native balance for wallet A
+  const [loadingWalletA, setLoadingWalletA] = useState(false)
   const [searchA, setSearchA] = useState('')
   const [searchB, setSearchB] = useState('')
   const [showDropdownA, setShowDropdownA] = useState(false)
@@ -92,6 +97,43 @@ export default function WithdrawTab({ theme = 'dark' }) {
     fetchCreatedWallets()
   }, [activeNetwork])
 
+  // Fetch native balance for wallet A when selected
+  useEffect(() => {
+    const fetchWalletANativeBalance = async () => {
+      if (selectedWalletA && selectedWalletA.address) {
+        setLoadingWalletA(true)
+        try {
+          // Map network to blockchain
+          const blockchain = networkToBlockchain[activeNetwork] || 'ethereum'
+          
+          const nativeBalance = await getNativeBalance(selectedWalletA.address, blockchain)
+          
+          const nativeSymbols = {
+            ethereum: 'ETH',
+            bsc: 'BNB',
+            tron: 'TRX',
+            solana: 'SOL'
+          }
+          
+          setWalletANativeBalance({
+            balance: nativeBalance || '0',
+            symbol: nativeSymbols[blockchain] || 'ETH',
+            blockchain
+          })
+        } catch (error) {
+          console.error('Error fetching wallet A native balance:', error)
+          setWalletANativeBalance(null)
+        } finally {
+          setLoadingWalletA(false)
+        }
+      } else {
+        setWalletANativeBalance(null)
+      }
+    }
+    
+    fetchWalletANativeBalance()
+  }, [selectedWalletA, activeNetwork])
+
   // Fetch USDC and USDT balances when wallet A is selected
   useEffect(() => {
     const fetchTokenBalances = async () => {
@@ -153,6 +195,69 @@ export default function WithdrawTab({ theme = 'dark' }) {
     fetchTokenBalances()
   }, [selectedWalletA, activeNetwork])
 
+  // Fetch balances (native + USDC + USDT) for wallet B on selected chain
+  useEffect(() => {
+    const fetchWalletBBalances = async () => {
+      if (selectedWalletB && selectedWalletB.address) {
+        setLoadingWalletB(true)
+        try {
+          // Map active network to blockchain
+          const blockchain = networkToBlockchain[activeNetwork] || 'ethereum'
+          
+          const chainNames = {
+            ethereum: 'Ethereum',
+            bsc: 'BSC',
+            tron: 'Tron',
+            solana: 'Solana'
+          }
+          const nativeSymbols = {
+            ethereum: 'ETH',
+            bsc: 'BNB',
+            tron: 'TRX',
+            solana: 'SOL'
+          }
+
+          // Fetch balances for the selected chain only
+          try {
+            const [nativeBalance, tokenBalances] = await Promise.all([
+              getNativeBalance(selectedWalletB.address, blockchain),
+              getUSDCUSDTBalances(selectedWalletB.address, blockchain)
+            ])
+
+            setWalletBBalances([{
+              blockchain,
+              chainName: chainNames[blockchain],
+              nativeSymbol: nativeSymbols[blockchain],
+              native: nativeBalance || '0',
+              usdc: tokenBalances.USDC || '0',
+              usdt: tokenBalances.USDT || '0'
+            }])
+          } catch (error) {
+            console.error(`Error fetching balances for ${blockchain}:`, error)
+            setWalletBBalances([{
+              blockchain,
+              chainName: chainNames[blockchain],
+              nativeSymbol: nativeSymbols[blockchain],
+              native: '0',
+              usdc: '0',
+              usdt: '0',
+              error: error.message
+            }])
+          }
+        } catch (error) {
+          console.error('Error fetching wallet B balances:', error)
+          setWalletBBalances(null)
+        } finally {
+          setLoadingWalletB(false)
+        }
+      } else {
+        setWalletBBalances(null)
+      }
+    }
+
+    fetchWalletBBalances()
+  }, [selectedWalletB, activeNetwork])
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRefA.current && !dropdownRefA.current.contains(event.target)) {
@@ -169,6 +274,18 @@ export default function WithdrawTab({ theme = 'dark' }) {
     }
   }, [])
 
+  // Helper function to get native symbol for current chain
+  const getNativeSymbol = () => {
+    const blockchain = networkToBlockchain[activeNetwork] || 'ethereum'
+    const nativeSymbols = {
+      ethereum: 'ETH',
+      bsc: 'BNB',
+      tron: 'TRX',
+      solana: 'SOL'
+    }
+    return nativeSymbols[blockchain] || 'ETH'
+  }
+
   const filteredWalletsA = walletsA.filter(wallet =>
     wallet.address.toLowerCase().includes(searchA.toLowerCase()) ||
     wallet.name.toLowerCase().includes(searchA.toLowerCase())
@@ -184,12 +301,14 @@ export default function WithdrawTab({ theme = 'dark' }) {
     setSearchA(wallet.name)
     setShowDropdownA(false)
     setSelectedTokens({})
+    setWalletANativeBalance(null) // Reset balance when selecting new wallet
   }
 
   const handleSelectWalletB = (wallet) => {
     setSelectedWalletB(wallet)
     setSearchB(wallet.name)
     setShowDropdownB(false)
+    setWalletBBalances(null) // Reset balances when selecting new wallet
   }
 
   const handleSelectToken = (token) => {
@@ -509,19 +628,109 @@ export default function WithdrawTab({ theme = 'dark' }) {
                       ? 'text-gray-300 bg-gray-700/50 border-gray-600'
                       : 'text-gray-600 bg-gray-50 border-gray-200'
                   }`}>{selectedWalletA.address}</div>
-                  <div className="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#667eea] to-[#764ba2]">Balance: {selectedWalletA.balance}</div>
+                  <div className="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#667eea] to-[#764ba2]">
+                    {loadingWalletA ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-[#667eea]"></span>
+                        Loading...
+                      </span>
+                    ) : walletANativeBalance ? (
+                      `Balance: ${walletANativeBalance.balance} ${walletANativeBalance.symbol}`
+                    ) : (
+                      `Balance: 0.00 ${networkToBlockchain[activeNetwork] === 'ethereum' ? 'ETH' : networkToBlockchain[activeNetwork] === 'bsc' ? 'BNB' : networkToBlockchain[activeNetwork] === 'tron' ? 'TRX' : networkToBlockchain[activeNetwork] === 'solana' ? 'SOL' : 'ETH'}`
+                    )}
+                  </div>
                 </div>
-                <div className={`p-4 rounded-2xl border border-[#667eea]/20 ${
-                  theme === 'dark' ? 'bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10' : 'bg-gradient-to-br from-[#667eea]/5 to-[#764ba2]/5'
-                }`}>
-                  <div className={`text-xs font-bold mb-3 uppercase tracking-wider ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>To:</div>
-                  <div className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{selectedWalletB.name}</div>
-                  <div className={`text-sm font-mono mb-2 break-all px-3 py-2 rounded-lg border ${
-                    theme === 'dark'
-                      ? 'text-gray-300 bg-gray-700/50 border-gray-600'
-                      : 'text-gray-600 bg-gray-50 border-gray-200'
-                  }`}>{selectedWalletB.address}</div>
-                  <div className="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#667eea] to-[#764ba2]">Balance: {selectedWalletB.balance}</div>
+                <div className="space-y-4">
+                  <div className={`p-4 rounded-2xl border border-[#667eea]/20 ${
+                    theme === 'dark' ? 'bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10' : 'bg-gradient-to-br from-[#667eea]/5 to-[#764ba2]/5'
+                  }`}>
+                    <div className={`text-xs font-bold mb-3 uppercase tracking-wider ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>To:</div>
+                    <div className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{selectedWalletB.name}</div>
+                    <div className={`text-sm font-mono mb-2 break-all px-3 py-2 rounded-lg border ${
+                      theme === 'dark'
+                        ? 'text-gray-300 bg-gray-700/50 border-gray-600'
+                        : 'text-gray-600 bg-gray-50 border-gray-200'
+                    }`}>{selectedWalletB.address}</div>
+                  </div>
+
+                  {/* Wallet B Balances across all chains */}
+                  {loadingWalletB ? (
+                    <div className={`p-6 text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#667eea]"></div>
+                      <p className="mt-2">Loading balances...</p>
+                    </div>
+                  ) : walletBBalances ? (
+                    <div className={`rounded-2xl border overflow-hidden ${
+                      theme === 'dark' ? 'bg-gray-800 border-gray-700/50' : 'bg-white border-gray-200/50'
+                    }`}>
+                      <div className="bg-gradient-to-r from-[#667eea] via-[#764ba2] to-[#f093fb] text-white px-6 py-4 border-b border-white/20">
+                        <h3 className="text-lg font-bold">Balances on {walletBBalances[0]?.chainName || activeNetwork}</h3>
+                      </div>
+                      <div className="p-4">
+                        {walletBBalances.map((chainData) => (
+                          <div
+                            key={chainData.blockchain}
+                            className="grid grid-cols-1 md:grid-cols-3 gap-3"
+                          >
+                            {/* Native Token */}
+                            <div className={`p-4 rounded-xl border ${
+                              theme === 'dark' 
+                                ? 'bg-gray-700/30 border-gray-600/50' 
+                                : 'bg-gray-50 border-gray-200/50'
+                            }`}>
+                              <div className={`text-xs mb-2 uppercase tracking-wider ${
+                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                Native ({chainData.nativeSymbol})
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                              }`}>
+                                {chainData.native} {chainData.nativeSymbol}
+                              </div>
+                            </div>
+                            
+                            {/* USDC */}
+                            <div className={`p-4 rounded-xl border ${
+                              theme === 'dark' 
+                                ? 'bg-gray-700/30 border-gray-600/50' 
+                                : 'bg-gray-50 border-gray-200/50'
+                            }`}>
+                              <div className={`text-xs mb-2 uppercase tracking-wider ${
+                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                USDC
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                              }`}>
+                                {chainData.usdc} USDC
+                              </div>
+                            </div>
+                            
+                            {/* USDT */}
+                            <div className={`p-4 rounded-xl border ${
+                              theme === 'dark' 
+                                ? 'bg-gray-700/30 border-gray-600/50' 
+                                : 'bg-gray-50 border-gray-200/50'
+                            }`}>
+                              <div className={`text-xs mb-2 uppercase tracking-wider ${
+                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                USDT
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                              }`}>
+                                {chainData.usdt} USDT
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ) : selectedWalletA ? (
@@ -535,7 +744,18 @@ export default function WithdrawTab({ theme = 'dark' }) {
                     ? 'text-gray-300 bg-gray-700/50 border-gray-600'
                     : 'text-gray-600 bg-white/50 border-gray-200/50'
                 }`}>{selectedWalletA.address}</div>
-                <div className="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#667eea] to-[#764ba2]">Balance: {selectedWalletA.balance}</div>
+                <div className="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#667eea] to-[#764ba2]">
+                  {loadingWalletA ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-[#667eea]"></span>
+                      Loading...
+                    </span>
+                  ) : walletANativeBalance ? (
+                    `Balance: ${walletANativeBalance.balance} ${walletANativeBalance.symbol}`
+                  ) : (
+                    `Balance: 0.00 ${getNativeSymbol()}`
+                  )}
+                </div>
               </div>
             ) : (
               <div className={`p-12 text-center w-full ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -556,17 +776,96 @@ export default function WithdrawTab({ theme = 'dark' }) {
             )}
 
             {!selectedWalletA && selectedWalletB && (
-              <div className={`w-full p-4 rounded-2xl border border-[#667eea]/20 ${
-                theme === 'dark' ? 'bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10' : 'bg-gradient-to-br from-[#667eea]/5 to-[#764ba2]/5'
-              }`}>
-                <div className={`text-xs font-bold mb-3 uppercase tracking-wider ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>To:</div>
-                <div className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{selectedWalletB.name}</div>
-                <div className={`text-sm font-mono mb-2 break-all px-3 py-2 rounded-lg border ${
-                  theme === 'dark'
-                    ? 'text-gray-300 bg-gray-700/50 border-gray-600'
-                    : 'text-gray-600 bg-white/50 border-gray-200/50'
-                }`}>{selectedWalletB.address}</div>
-                <div className="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#667eea] to-[#764ba2]">Balance: {selectedWalletB.balance}</div>
+              <div className="w-full space-y-4">
+                <div className={`p-4 rounded-2xl border border-[#667eea]/20 ${
+                  theme === 'dark' ? 'bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10' : 'bg-gradient-to-br from-[#667eea]/5 to-[#764ba2]/5'
+                }`}>
+                  <div className={`text-xs font-bold mb-3 uppercase tracking-wider ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>To:</div>
+                  <div className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{selectedWalletB.name}</div>
+                  <div className={`text-sm font-mono mb-2 break-all px-3 py-2 rounded-lg border ${
+                    theme === 'dark'
+                      ? 'text-gray-300 bg-gray-700/50 border-gray-600'
+                      : 'text-gray-600 bg-white/50 border-gray-200/50'
+                  }`}>{selectedWalletB.address}</div>
+                </div>
+
+                {/* Wallet B Balances across all chains */}
+                {loadingWalletB ? (
+                  <div className={`p-6 text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#667eea]"></div>
+                    <p className="mt-2">Loading balances...</p>
+                  </div>
+                ) : walletBBalances ? (
+                  <div className={`rounded-2xl border overflow-hidden ${
+                    theme === 'dark' ? 'bg-gray-800 border-gray-700/50' : 'bg-white border-gray-200/50'
+                  }`}>
+                      <div className="bg-gradient-to-r from-[#667eea] via-[#764ba2] to-[#f093fb] text-white px-6 py-4 border-b border-white/20">
+                        <h3 className="text-lg font-bold">Balances on {walletBBalances[0]?.chainName || activeNetwork}</h3>
+                      </div>
+                      <div className="p-4">
+                        {walletBBalances.map((chainData) => (
+                          <div
+                            key={chainData.blockchain}
+                            className="grid grid-cols-1 md:grid-cols-3 gap-3"
+                          >
+                            {/* Native Token */}
+                            <div className={`p-4 rounded-xl border ${
+                              theme === 'dark' 
+                                ? 'bg-gray-700/30 border-gray-600/50' 
+                                : 'bg-gray-50 border-gray-200/50'
+                            }`}>
+                              <div className={`text-xs mb-2 uppercase tracking-wider ${
+                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                Native ({chainData.nativeSymbol})
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                              }`}>
+                                {chainData.native} {chainData.nativeSymbol}
+                              </div>
+                            </div>
+                            
+                            {/* USDC */}
+                            <div className={`p-4 rounded-xl border ${
+                              theme === 'dark' 
+                                ? 'bg-gray-700/30 border-gray-600/50' 
+                                : 'bg-gray-50 border-gray-200/50'
+                            }`}>
+                              <div className={`text-xs mb-2 uppercase tracking-wider ${
+                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                USDC
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                              }`}>
+                                {chainData.usdc} USDC
+                              </div>
+                            </div>
+                            
+                            {/* USDT */}
+                            <div className={`p-4 rounded-xl border ${
+                              theme === 'dark' 
+                                ? 'bg-gray-700/30 border-gray-600/50' 
+                                : 'bg-gray-50 border-gray-200/50'
+                            }`}>
+                              <div className={`text-xs mb-2 uppercase tracking-wider ${
+                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                USDT
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                              }`}>
+                                {chainData.usdt} USDT
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                  </div>
+                ) : null}
               </div>
             )}
 

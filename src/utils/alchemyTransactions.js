@@ -40,9 +40,20 @@ export const getNativeBalance = async (walletAddress, blockchain) => {
       const balanceSol = balance / 1e9 // Convert lamports to SOL
       return balanceSol.toFixed(6).replace(/\.?0+$/, '')
     } else if (blockchain === 'tron') {
-      // Tron uses TRX, but Alchemy might not support it well
-      // For now, return 0 or use TronGrid
-      return '0'
+      // Use TronWeb to get TRX balance
+      try {
+        const { TronWeb } = await import('tronweb')
+        const tronWeb = new TronWeb({
+          fullHost: rpcUrl
+        })
+        const balance = await tronWeb.trx.getBalance(walletAddress)
+        // Convert from sun (smallest unit) to TRX (1 TRX = 1,000,000 sun)
+        const balanceTrx = balance / 1000000
+        return balanceTrx.toFixed(6).replace(/\.?0+$/, '')
+      } catch (error) {
+        console.error('Error fetching Tron native balance:', error)
+        return '0'
+      }
     }
     
     return '0'
