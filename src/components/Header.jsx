@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom'
 import { useWalletContext } from '../contexts/WalletContext'
 import logo from '../img/logo.png'
 
-// Admin emails that can access admin panel
-const ADMIN_EMAILS = ['Kashifmahi271@gmail.com', 'superdev5597@gmail.com']
+// Admin emails that can access admin panel (case-insensitive)
+const ADMIN_EMAILS = ['kashifmahi271@gmail.com', 'superdev5597@gmail.com']
 
 const isAdmin = (email) => {
-  return email && ADMIN_EMAILS.includes(email)
+  if (!email) return false
+  const emailLower = email.toLowerCase()
+  return ADMIN_EMAILS.some(adminEmail => adminEmail.toLowerCase() === emailLower)
 }
 
 export default function Header({ theme, setTheme, activeTab, setActiveTab, user }) {
