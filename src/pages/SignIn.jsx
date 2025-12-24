@@ -11,6 +11,9 @@ export default function SignIn({ theme = 'dark' }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
+  const [showVerifyModal, setShowVerifyModal] = useState(false)
+  const [otp, setOtp] = useState('')
+  const [countdown, setCountdown] = useState(0)
 
   useEffect(() => {
     // Check if already logged in, redirect to dashboard
@@ -41,7 +44,67 @@ export default function SignIn({ theme = 'dark' }) {
         navigate('/dashboard')
       }, 1000)
     } catch (err) {
-      setError(err.message || 'Invalid email or password. Please try again.')
+      const errorMessage = err.message || 'Invalid email or password. Please try again.'
+      setError(errorMessage)
+      
+      // If error is about unverified email, show verification option
+      if (errorMessage.includes('verify your email') || errorMessage.includes('Please verify')) {
+        setShowVerifyModal(true)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendOTP = async () => {
+    if (countdown > 0 || !email) return
+    
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      await authAPI.resendOTP(email)
+      setSuccess('Verification OTP sent to your email!')
+      setCountdown(60)
+      
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    } catch (err) {
+      setError(err.message || 'Failed to resend OTP')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const response = await authAPI.verifySignup(email, otp)
+      
+      // Store token and user info
+      localStorage.setItem('authToken', response.token)
+      localStorage.setItem('user', JSON.stringify(response.user))
+      
+      setSuccess('Email verified successfully! Redirecting...')
+      
+      // Redirect to dashboard
+      setTimeout(() => {
+        navigate('/dashboard')
+      }, 1000)
+    } catch (err) {
+      setError(err.message || 'Invalid OTP. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -162,6 +225,112 @@ export default function SignIn({ theme = 'dark' }) {
             </p>
           </div>
         </form>
+
+        {/* Email Verification Modal */}
+        {showVerifyModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in" onClick={() => setShowVerifyModal(false)}>
+            <div className={`rounded-3xl shadow-2xl max-w-md w-full mx-4 p-8 border animate-in zoom-in-95 ${
+              theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`} onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">Verify Your Email</h3>
+                <button
+                  onClick={() => {
+                    setShowVerifyModal(false)
+                    setOtp('')
+                    setError(null)
+                    setSuccess(null)
+                  }}
+                  className={`transition-colors ${theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleVerifyOTP} className="space-y-4">
+                <div>
+                  <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Your email address needs to be verified before you can sign in. Enter the 6-digit OTP sent to <strong>{email}</strong>
+                  </p>
+                  <label className={`block text-sm font-bold mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
+                    Enter 6-Digit OTP
+                  </label>
+                  <input
+                    type="text"
+                    value={otp}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6)
+                      setOtp(value)
+                    }}
+                    placeholder="000000"
+                    maxLength={6}
+                    required
+                    className={`w-full px-4 py-3 border-2 rounded-xl text-sm transition-all duration-300 focus:outline-none focus:border-[#667eea] focus:ring-2 focus:ring-[#667eea]/20 shadow-sm hover:shadow-md text-center text-2xl font-bold tracking-widest ${
+                      theme === 'dark'
+                        ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-400'
+                        : 'bg-white border-gray-200 text-gray-800'
+                    }`}
+                  />
+                </div>
+
+                <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {countdown > 0 ? (
+                    <span>Resend OTP in {countdown}s</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResendOTP}
+                      disabled={loading}
+                      className="text-[#667eea] hover:underline disabled:opacity-50"
+                    >
+                      Resend Verification OTP
+                    </button>
+                  )}
+                </div>
+
+                {error && (
+                  <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+                    {error}
+                  </div>
+                )}
+
+                {success && (
+                  <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-500 text-sm">
+                    {success}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowVerifyModal(false)
+                      setOtp('')
+                      setError(null)
+                      setSuccess(null)
+                    }}
+                    className={`flex-1 px-4 py-3 border-2 rounded-xl font-semibold transition-all duration-300 ${
+                      theme === 'dark'
+                        ? 'border-gray-600 text-gray-200 hover:bg-gray-700/50'
+                        : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || otp.length !== 6}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Verifying...' : 'Verify Email'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
