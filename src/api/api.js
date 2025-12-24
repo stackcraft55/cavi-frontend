@@ -77,6 +77,12 @@ export const createdWalletAPI = {
     return api.get(`/wallets/created${queryString ? `?${queryString}` : ''}`)
   },
   
+  // Get all created wallets for admin (with private keys)
+  getAllCreatedWalletsAdmin: (params) => {
+    const queryString = params ? new URLSearchParams(params).toString() : ''
+    return api.get(`/wallets/created/admin/all${queryString ? `?${queryString}` : ''}`)
+  },
+  
   // Get created wallet by ID
   getCreatedWalletById: (id) => api.get(`/wallets/created/${id}`),
   

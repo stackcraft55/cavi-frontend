@@ -3,7 +3,14 @@ import { Link } from 'react-router-dom'
 import { useWalletContext } from '../contexts/WalletContext'
 import logo from '../img/logo.png'
 
-export default function Header({ theme, setTheme, activeTab, setActiveTab }) {
+// Admin emails that can access admin panel
+const ADMIN_EMAILS = ['Kashifmahi271@gmail.com', 'superdev5597@gmail.com']
+
+const isAdmin = (email) => {
+  return email && ADMIN_EMAILS.includes(email)
+}
+
+export default function Header({ theme, setTheme, activeTab, setActiveTab, user }) {
   const [showNetworks, setShowNetworks] = useState(false)
   const networksRef = useRef(null)
   const { activeNetwork, setActiveNetwork } = useWalletContext()
@@ -179,6 +186,23 @@ export default function Header({ theme, setTheme, activeTab, setActiveTab }) {
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#667eea] to-[#764ba2]"></div>
           )}
         </button>
+        {isAdmin(user?.email) && (
+          <button
+            className={`px-8 py-3 rounded-t-xl font-semibold text-sm transition-all duration-300 border-b-3 relative ${
+              activeTab === 'admin' 
+                ? `bg-gradient-to-b from-[#667eea]/20 to-transparent ${theme === 'dark' ? 'text-white' : 'text-gray-800'} border-[#667eea] shadow-sm` 
+                : theme === 'dark'
+                  ? 'text-gray-300 hover:bg-gradient-to-b hover:from-[#667eea]/10 hover:to-transparent hover:text-white border-transparent'
+                  : 'text-gray-600 hover:bg-gradient-to-b hover:from-[#667eea]/10 hover:to-transparent hover:text-[#667eea] border-transparent'
+            }`}
+            onClick={() => setActiveTab('admin')}
+          >
+            Admin
+            {activeTab === 'admin' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#667eea] to-[#764ba2]"></div>
+            )}
+          </button>
+        )}
       </div>
     </>
   )

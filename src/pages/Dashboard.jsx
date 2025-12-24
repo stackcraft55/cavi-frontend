@@ -6,6 +6,14 @@ import TrackTab from '../components/TrackTab'
 import WithdrawTab from '../components/WithdrawTab'
 import WalletsTab from '../components/WalletsTab'
 import MyPageTab from '../components/MyPageTab'
+import AdminPanelTab from '../components/AdminPanelTab'
+
+// Admin emails that can access admin panel
+const ADMIN_EMAILS = ['Kashifmahi271@gmail.com', 'superdev5597@gmail.com']
+
+const isAdmin = (email) => {
+  return email && ADMIN_EMAILS.includes(email)
+}
 
 export default function Dashboard({ theme, setTheme }) {
   const [activeTab, setActiveTab] = useState('track')
@@ -20,6 +28,13 @@ export default function Dashboard({ theme, setTheme }) {
     }
   }, [])
 
+  useEffect(() => {
+    // Redirect non-admin users away from admin tab
+    if (activeTab === 'admin' && !isAdmin(user?.email)) {
+      setActiveTab('track')
+    }
+  }, [activeTab, user, setActiveTab])
+
   const handleLogout = () => {
     localStorage.removeItem('authToken')
     localStorage.removeItem('user')
@@ -33,6 +48,7 @@ export default function Dashboard({ theme, setTheme }) {
         setTheme={setTheme} 
         activeTab={activeTab} 
         setActiveTab={setActiveTab}
+        user={user}
       />
 
       <main className={`flex-1 p-4 md:p-8 h-full overflow-hidden transition-colors duration-300 ${
@@ -44,6 +60,7 @@ export default function Dashboard({ theme, setTheme }) {
         {activeTab === 'withdraw' && <WithdrawTab theme={theme} />}
         {activeTab === 'wallets' && <WalletsTab theme={theme} onConnectWallet={() => setShowWalletModal(true)} />}
         {activeTab === 'mypage' && <MyPageTab theme={theme} user={user} onLogout={handleLogout} />}
+        {activeTab === 'admin' && isAdmin(user?.email) && <AdminPanelTab theme={theme} />}
       </main>
 
       <WalletConnectModal 
