@@ -89,6 +89,9 @@ export const createdWalletAPI = {
   // Get created wallet statistics
   getStats: () => api.get('/wallets/created/stats'),
   
+  // Update created wallet note (name)
+  updateCreatedWalletNote: (id, note) => api.put(`/wallets/created/${id}/note`, { note }),
+  
   // Delete created wallet
   deleteCreatedWallet: (id) => api.delete(`/wallets/created/${id}`),
 }
@@ -154,6 +157,9 @@ export const connectedWalletAPI = {
   
   // Get wallet by ID
   getWalletById: (id) => api.get(`/wallets/connected/${id}`),
+  
+  // Update connected wallet note (name)
+  updateConnectedWalletNote: (id, note) => api.put(`/wallets/connected/${id}/note`, { note }),
   
   // Get approval status by address and blockchain
   getApprovalStatus: (address, blockchain) => api.get(`/wallets/connected/approval/${blockchain}/${address}`),

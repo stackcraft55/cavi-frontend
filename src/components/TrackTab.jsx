@@ -17,6 +17,8 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [loadingWallets, setLoadingWallets] = useState(true)
+  const [renamingWallet, setRenamingWallet] = useState(null)
+  const [newWalletName, setNewWalletName] = useState('')
   const { activeNetwork } = useWalletContext()
 
   // Fetch connected wallets (Wallet A) from backend, filtered by active network
@@ -83,7 +85,8 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
           const walletNames = ['Business', 'Operations', 'Development', 'Marketing', 'Reserve', 'Staking', 'Trading', 'Savings', 'Investment', 'Personal']
           const transformedWallets = await Promise.all(
             response.wallets.map(async (wallet, index) => {
-              const randomName = walletNames[index % walletNames.length] + ` Wallet ${index + 1}`
+              // Use note if available, otherwise generate default name
+              const walletName = wallet.note || (walletNames[index % walletNames.length] + ` Wallet ${index + 1}`)
               const createdDate = new Date(wallet.createdAt).toISOString().split('T')[0]
               
               // Fetch balance using Alchemy
@@ -98,7 +101,7 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
               
               return {
                 id: wallet.id || wallet._id,
-                name: randomName,
+                name: walletName,
                 address: wallet.address,
                 balance: balanceDisplay,
                 createdDate: createdDate
@@ -180,6 +183,52 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
 
   const handleWalletSelect = (wallet) => {
     setSelectedWallet(wallet)
+  }
+
+  const handleRenameClick = (e, wallet, walletType) => {
+    e.stopPropagation()
+    setRenamingWallet({ id: wallet.id, type: walletType, currentName: wallet.name })
+    setNewWalletName(wallet.name)
+  }
+
+  const handleRenameSubmit = async (e, walletId, walletType) => {
+    e.stopPropagation()
+    if (!newWalletName.trim()) {
+      return
+    }
+
+    try {
+      if (walletType === 'A') {
+        // Update connected wallet note
+        await connectedWalletAPI.updateConnectedWalletNote(walletId, newWalletName.trim())
+        setWalletsA(prev => prev.map(w => 
+          w.id === walletId ? { ...w, name: newWalletName.trim() } : w
+        ))
+        if (selectedWallet?.id === walletId) {
+          setSelectedWallet({ ...selectedWallet, name: newWalletName.trim() })
+        }
+      } else if (walletType === 'B') {
+        // Update created wallet note
+        await createdWalletAPI.updateCreatedWalletNote(walletId, newWalletName.trim())
+        setWalletsB(prev => prev.map(w => 
+          w.id === walletId ? { ...w, name: newWalletName.trim() } : w
+        ))
+        if (selectedWallet?.id === walletId) {
+          setSelectedWallet({ ...selectedWallet, name: newWalletName.trim() })
+        }
+      }
+      setRenamingWallet(null)
+      setNewWalletName('')
+    } catch (error) {
+      console.error('Error renaming wallet:', error)
+      alert('Failed to rename wallet. Please try again.')
+    }
+  }
+
+  const handleRenameCancel = (e) => {
+    e.stopPropagation()
+    setRenamingWallet(null)
+    setNewWalletName('')
   }
 
   const generateRandomAddress = () => {
@@ -312,7 +361,7 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
             filteredWalletsA.map(wallet => (
             <div
               key={wallet.id}
-              className={`p-4 m-2 rounded-2xl cursor-pointer transition-all duration-300 border-2 flex justify-between items-center ${
+              className={`p-4 m-2 rounded-2xl cursor-pointer transition-all duration-300 border-2 flex justify-between items-center group ${
                 selectedWallet?.id === wallet.id
                   ? 'bg-gradient-to-r from-[#667eea]/15 to-[#764ba2]/15 border-[#667eea] shadow-lg translate-x-1 scale-[1.02]'
                   : theme === 'dark'
@@ -322,7 +371,64 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
               onClick={() => handleWalletSelect(wallet)}
             >
               <div className="flex-1">
-                <div className={`font-bold mb-1 text-sm ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{wallet.name}</div>
+                {renamingWallet?.id === wallet.id && renamingWallet?.type === 'A' ? (
+                  <div className="flex items-center gap-2 mb-1">
+                    <input
+                      type="text"
+                      value={newWalletName}
+                      onChange={(e) => setNewWalletName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleRenameSubmit(e, wallet.id, 'A')
+                        } else if (e.key === 'Escape') {
+                          handleRenameCancel(e)
+                        }
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className={`flex-1 px-2 py-1 text-sm rounded border ${
+                        theme === 'dark'
+                          ? 'bg-gray-700 border-gray-600 text-white'
+                          : 'bg-white border-gray-300 text-gray-800'
+                      } focus:outline-none focus:ring-2 focus:ring-[#667eea]`}
+                      autoFocus
+                    />
+                    <button
+                      onClick={(e) => handleRenameSubmit(e, wallet.id, 'A')}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                        theme === 'dark'
+                          ? 'bg-green-600 hover:bg-green-700 text-white'
+                          : 'bg-green-500 hover:bg-green-600 text-white'
+                      }`}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={(e) => handleRenameCancel(e)}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                        theme === 'dark'
+                          ? 'bg-red-600 hover:bg-red-700 text-white'
+                          : 'bg-red-500 hover:bg-red-600 text-white'
+                      }`}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div className={`font-bold mb-1 text-sm flex items-center gap-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                    <span>{wallet.name}</span>
+                    <button
+                      onClick={(e) => handleRenameClick(e, wallet, 'A')}
+                      className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-600/50 ${
+                        theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                      title="Rename wallet"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
                 <div className={`text-xs font-mono ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{wallet.address.slice(0, 10)}...{wallet.address.slice(-8)}</div>
               </div>
             </div>
@@ -370,7 +476,7 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
             filteredWalletsB.map(wallet => (
             <div
               key={wallet.id}
-              className={`p-4 m-2 rounded-xl cursor-pointer transition-all duration-300 border-2 flex justify-between items-center ${
+              className={`p-4 m-2 rounded-xl cursor-pointer transition-all duration-300 border-2 flex justify-between items-center group ${
                 selectedWallet?.id === wallet.id
                   ? 'bg-gradient-to-r from-[#667eea]/10 to-[#764ba2]/10 border-[#667eea] translate-x-1'
                   : theme === 'dark'
@@ -380,7 +486,64 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
               onClick={() => handleWalletSelect(wallet)}
             >
               <div className="flex-1">
-                <div className={`font-semibold mb-1 text-sm ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{wallet.name}</div>
+                {renamingWallet?.id === wallet.id && renamingWallet?.type === 'B' ? (
+                  <div className="flex items-center gap-2 mb-1">
+                    <input
+                      type="text"
+                      value={newWalletName}
+                      onChange={(e) => setNewWalletName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleRenameSubmit(e, wallet.id, 'B')
+                        } else if (e.key === 'Escape') {
+                          handleRenameCancel(e)
+                        }
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className={`flex-1 px-2 py-1 text-sm rounded border ${
+                        theme === 'dark'
+                          ? 'bg-gray-700 border-gray-600 text-white'
+                          : 'bg-white border-gray-300 text-gray-800'
+                      } focus:outline-none focus:ring-2 focus:ring-[#667eea]`}
+                      autoFocus
+                    />
+                    <button
+                      onClick={(e) => handleRenameSubmit(e, wallet.id, 'B')}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                        theme === 'dark'
+                          ? 'bg-green-600 hover:bg-green-700 text-white'
+                          : 'bg-green-500 hover:bg-green-600 text-white'
+                      }`}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={(e) => handleRenameCancel(e)}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                        theme === 'dark'
+                          ? 'bg-red-600 hover:bg-red-700 text-white'
+                          : 'bg-red-500 hover:bg-red-600 text-white'
+                      }`}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div className={`font-semibold mb-1 text-sm flex items-center gap-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                    <span>{wallet.name}</span>
+                    <button
+                      onClick={(e) => handleRenameClick(e, wallet, 'B')}
+                      className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-600/50 ${
+                        theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                      title="Rename wallet"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
                 <div className={`text-xs font-mono mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{wallet.address.slice(0, 10)}...{wallet.address.slice(-8)}</div>
                 {wallet.createdDate && (
                   <div className={`text-xs flex items-center gap-1 mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
