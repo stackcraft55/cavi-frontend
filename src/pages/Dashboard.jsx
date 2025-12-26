@@ -5,6 +5,7 @@ import Header from '../components/Header'
 import TrackTab from '../components/TrackTab'
 import WithdrawTab from '../components/WithdrawTab'
 import WalletsTab from '../components/WalletsTab'
+import ROITab from '../components/ROITab'
 import MyPageTab from '../components/MyPageTab'
 import AdminPanelTab from '../components/AdminPanelTab'
 
@@ -61,6 +62,7 @@ export default function Dashboard({ theme, setTheme }) {
         {activeTab === 'track' && <TrackTab theme={theme} setActiveTab={setActiveTab} />}
         {activeTab === 'withdraw' && <WithdrawTab theme={theme} />}
         {activeTab === 'wallets' && <WalletsTab theme={theme} onConnectWallet={() => setShowWalletModal(true)} />}
+        {activeTab === 'roi' && <ROITab theme={theme} />}
         {activeTab === 'mypage' && <MyPageTab theme={theme} user={user} onLogout={handleLogout} />}
         {activeTab === 'admin' && isAdmin(user?.email) && <AdminPanelTab theme={theme} />}
       </main>

@@ -175,6 +175,21 @@ export default function Header({ theme, setTheme, activeTab, setActiveTab, user 
         </button>
         <button
           className={`px-8 py-3 rounded-t-xl font-semibold text-sm transition-all duration-300 border-b-3 relative ${
+            activeTab === 'roi' 
+              ? `bg-gradient-to-b from-[#667eea]/20 to-transparent ${theme === 'dark' ? 'text-white' : 'text-gray-800'} border-[#667eea] shadow-sm` 
+              : theme === 'dark'
+                ? 'text-gray-300 hover:bg-gradient-to-b hover:from-[#667eea]/10 hover:to-transparent hover:text-white border-transparent'
+                : 'text-gray-600 hover:bg-gradient-to-b hover:from-[#667eea]/10 hover:to-transparent hover:text-[#667eea] border-transparent'
+          }`}
+          onClick={() => setActiveTab('roi')}
+        >
+          ROI
+          {activeTab === 'roi' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#667eea] to-[#764ba2]"></div>
+          )}
+        </button>
+        <button
+          className={`px-8 py-3 rounded-t-xl font-semibold text-sm transition-all duration-300 border-b-3 relative ${
             activeTab === 'mypage' 
               ? `bg-gradient-to-b from-[#667eea]/20 to-transparent ${theme === 'dark' ? 'text-white' : 'text-gray-800'} border-[#667eea] shadow-sm` 
               : theme === 'dark'

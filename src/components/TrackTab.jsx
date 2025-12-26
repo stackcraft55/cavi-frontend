@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useWalletContext } from '../contexts/WalletContext'
-import { createdWalletAPI, connectedWalletAPI } from '../api/api'
+import { createdWalletAPI, connectedWalletAPI, withdrawAPI } from '../api/api'
 import { networkToBlockchain } from '../utils/tokenContracts'
 import { getNativeBalance, getTransactionHistory, getTokenBalances } from '../utils/alchemyTransactions'
 
 export default function TrackTab({ theme = 'dark', setActiveTab }) {
   const [selectedWallet, setSelectedWallet] = useState(null)
+  const [selectedWalletType, setSelectedWalletType] = useState(null) // 'A' or 'B'
   const [searchA, setSearchA] = useState('')
   const [searchB, setSearchB] = useState('')
   const [walletsA, setWalletsA] = useState([])
   const [walletsB, setWalletsB] = useState([])
   const [transactions, setTransactions] = useState([])
+  const [withdrawals, setWithdrawals] = useState([])
+  const [loadingWithdrawals, setLoadingWithdrawals] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [walletCount, setWalletCount] = useState('')
   const [loading, setLoading] = useState(false)
@@ -171,6 +174,40 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedWallet?.id, selectedWallet?.address, activeNetwork])
 
+  // Fetch withdrawals when wallet is selected
+  useEffect(() => {
+    const fetchWithdrawals = async () => {
+      if (selectedWallet && selectedWallet.address) {
+        setLoadingWithdrawals(true)
+        try {
+          const blockchain = networkToBlockchain[activeNetwork] || 'ethereum'
+          console.log('Fetching withdrawals for wallet:', selectedWallet.address, 'on blockchain:', blockchain)
+          
+          const response = await withdrawAPI.getWithdrawals({
+            walletAddress: selectedWallet.address,
+            blockchain
+          })
+          
+          if (response.withdrawals) {
+            setWithdrawals(response.withdrawals)
+          } else {
+            setWithdrawals([])
+          }
+        } catch (err) {
+          console.error('Error fetching withdrawals:', err)
+          setWithdrawals([])
+        } finally {
+          setLoadingWithdrawals(false)
+        }
+      } else {
+        setWithdrawals([])
+      }
+    }
+    
+    fetchWithdrawals()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWallet?.id, selectedWallet?.address, activeNetwork])
+
   const filteredWalletsA = walletsA.filter(wallet =>
     wallet.address.toLowerCase().includes(searchA.toLowerCase()) ||
     wallet.name.toLowerCase().includes(searchA.toLowerCase())
@@ -181,8 +218,9 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
     wallet.name.toLowerCase().includes(searchB.toLowerCase())
   )
 
-  const handleWalletSelect = (wallet) => {
+  const handleWalletSelect = (wallet, walletType) => {
     setSelectedWallet(wallet)
+    setSelectedWalletType(walletType) // 'A' or 'B'
   }
 
   const handleRenameClick = (e, wallet, walletType) => {
@@ -368,7 +406,7 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
                     ? 'border-gray-700/50 hover:bg-gray-700/50 hover:border-[#667eea]/50 hover:shadow-md hover:translate-x-1'
                     : 'border-gray-200/50 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100/50 hover:border-[#667eea]/50 hover:shadow-md hover:translate-x-1'
               }`}
-              onClick={() => handleWalletSelect(wallet)}
+              onClick={() => handleWalletSelect(wallet, 'A')}
             >
               <div className="flex-1">
                 {renamingWallet?.id === wallet.id && renamingWallet?.type === 'A' ? (
@@ -483,7 +521,7 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
                     ? 'border-transparent hover:bg-gray-700/50 hover:translate-x-1'
                     : 'border-transparent hover:bg-gray-50 hover:translate-x-1'
               }`}
-              onClick={() => handleWalletSelect(wallet)}
+              onClick={() => handleWalletSelect(wallet, 'B')}
             >
               <div className="flex-1">
                 {renamingWallet?.id === wallet.id && renamingWallet?.type === 'B' ? (
@@ -584,39 +622,59 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
           </div>
         )}
         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar min-h-0">
-          {selectedWallet && transactions.length > 0 ? (
-            transactions.map(transaction => (
-              <div key={transaction.id} className={`p-4 mb-3 rounded-2xl border flex items-start gap-4 transition-all duration-300 hover:shadow-lg hover:translate-x-1 hover:scale-[1.01] ${
-                theme === 'dark'
-                  ? 'bg-gradient-to-r from-gray-700/50 to-gray-800/50 border-gray-600/50 hover:from-gray-700 hover:to-gray-800'
-                  : 'bg-gradient-to-r from-gray-50 to-gray-100/50 border-gray-200/50 hover:from-gray-100 hover:to-gray-200/50'
-              }`}>
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#667eea] via-[#764ba2] to-[#f093fb] text-white flex items-center justify-center text-lg font-bold flex-shrink-0 shadow-lg">
-                  {transaction.type === 'send' && '↓'}
-                  {transaction.type === 'receive' && '↑'}
-                  {transaction.type === 'swap' && '⇄'}
-                </div>
-                <div className="flex-1">
-                  <div className={`text-lg font-semibold mb-1 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{transaction.amount}</div>
-                  <div className={`text-xs font-mono mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {transaction.type === 'send' && `To: ${transaction.to}`}
-                    {transaction.type === 'receive' && `From: ${transaction.from}`}
-                    {transaction.type === 'swap' && `Via: ${transaction.to}`}
+          {loadingWithdrawals ? (
+            <div className={`p-12 text-center ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#667eea]"></div>
+              <p className="mt-2">Loading withdrawals...</p>
+            </div>
+          ) : selectedWallet && withdrawals.length > 0 ? (
+            <div className="space-y-3">
+              {withdrawals.map(withdrawal => {
+                const isFromWallet = withdrawal.fromWalletAddress.toLowerCase() === selectedWallet.address.toLowerCase()
+                const otherAddress = isFromWallet ? withdrawal.toWalletAddress : withdrawal.fromWalletAddress
+                const date = new Date(withdrawal.createdAt)
+                const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString()
+                
+                return (
+                  <div key={withdrawal._id || withdrawal.id} className={`p-4 rounded-2xl border flex items-start gap-4 transition-all duration-300 hover:shadow-lg hover:translate-x-1 hover:scale-[1.01] ${
+                    theme === 'dark'
+                      ? 'bg-gradient-to-r from-blue-700/30 to-purple-700/30 border-blue-600/50 hover:from-blue-700/40 hover:to-purple-700/40'
+                      : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200/50 hover:from-blue-100 hover:to-purple-100'
+                  }`}>
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white flex items-center justify-center text-lg font-bold flex-shrink-0 shadow-lg">
+                      {isFromWallet ? '↓' : '↑'}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className={`text-lg font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                          {withdrawal.amount} {withdrawal.tokenType}
+                        </div>
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${theme === 'dark' ? 'bg-blue-600/30 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
+                          WITHDRAWAL
+                        </span>
+                      </div>
+                      <div className={`text-xs font-mono mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {isFromWallet ? `To: ${otherAddress.slice(0, 10)}...${otherAddress.slice(-8)}` : `From: ${otherAddress.slice(0, 10)}...${otherAddress.slice(-8)}`}
+                      </div>
+                      <div className={`text-xs mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                        TX: <span className="font-mono">{withdrawal.transactionHash.slice(0, 10)}...{withdrawal.transactionHash.slice(-8)}</span>
+                      </div>
+                      <div className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{formattedDate}</div>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase flex-shrink-0 shadow-sm ${
+                      withdrawal.status === 'success' 
+                        ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200' 
+                        : 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border border-red-200'
+                    }`}>
+                      {withdrawal.status}
+                    </div>
                   </div>
-                  <div className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{transaction.time}</div>
-                </div>
-                <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase flex-shrink-0 shadow-sm ${
-                  transaction.status === 'completed' 
-                    ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200' 
-                    : 'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-200'
-                }`}>
-                  {transaction.status}
-                </div>
-              </div>
-            ))
+                )
+              })}
+            </div>
           ) : selectedWallet ? (
             <div className={`p-12 text-center ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-              <p>No transactions found for this wallet</p>
+              <p>No withdrawals found for this wallet</p>
             </div>
           ) : null}
         </div>

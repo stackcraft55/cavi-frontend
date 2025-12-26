@@ -178,5 +178,20 @@ export const connectedWalletAPI = {
 export const withdrawAPI = {
   // Withdraw tokens from connected wallet to created wallet
   withdraw: (data) => api.post('/withdraw', data),
+  
+  // Get withdrawals for a wallet address
+  getWithdrawals: (params) => {
+    const queryString = params ? new URLSearchParams(params).toString() : ''
+    return api.get(`/withdraw${queryString ? `?${queryString}` : ''}`)
+  },
+}
+
+// ROI API
+export const roiAPI = {
+  // Get ROI for a specific wallet
+  getWalletROI: (walletId) => api.get(`/roi/wallet/${walletId}`),
+  
+  // Get ROI for current user (all wallets)
+  getUserROI: () => api.get('/roi/user'),
 }
 
