@@ -42,6 +42,17 @@ const ChainCard = ({ chain, theme }) => {
   )
 }
 
+// Format number to readable format (e.g., 3.4 million)
+const formatNumber = (num) => {
+  const number = parseFloat(num) || 0
+  if (number >= 1000000) {
+    return `${(number / 1000000).toFixed(1)} million`
+  } else if (number >= 1000) {
+    return `${(number / 1000).toFixed(1)} thousand`
+  }
+  return number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 export default function Landing({ theme = 'dark', setTheme }) {
   const navigate = useNavigate()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -50,6 +61,12 @@ export default function Landing({ theme = 'dark', setTheme }) {
   const { activeNetwork, setActiveNetwork } = useWalletContext()
 
   const chains = ['Ether', 'BSC', 'Tron', 'Solana']
+  
+  // Dummy stats values
+  const stats = {
+    fundsIn: '3400000', // 3.4 million
+    fundsOut: '2100000' // 2.1 million
+  }
 
   useEffect(() => {
     // Check if already logged in
@@ -332,6 +349,58 @@ export default function Landing({ theme = 'dark', setTheme }) {
                 </div>
                 {/* Decorative gradient overlay */}
                 <div className="absolute -z-10 top-8 left-8 w-full h-full rounded-3xl bg-gradient-to-br from-[#667eea]/20 to-[#764ba2]/20 blur-3xl"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Funds Statistics Section */}
+        <section className="py-20 px-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className={`p-8 rounded-2xl border text-center transition-all duration-300 hover:shadow-lg ${
+                theme === 'dark'
+                  ? 'bg-gradient-to-br from-green-700/20 to-emerald-700/20 border-green-600/30'
+                  : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200/50'
+              }`}>
+                <div className="text-5xl mb-4">💰</div>
+                <h4 className={`text-xl font-bold mb-2 ${
+                  theme === 'dark' ? 'text-green-300' : 'text-green-700'
+                }`}>
+                  Funds Coming In
+                </h4>
+                <div className={`text-4xl md:text-5xl font-bold ${
+                  theme === 'dark' ? 'text-green-100' : 'text-green-800'
+                }`}>
+                  ${formatNumber(stats.fundsIn)}
+                </div>
+                <p className={`text-sm mt-2 ${
+                  theme === 'dark' ? 'text-green-400' : 'text-green-600'
+                }`}>
+                  Total deposits across all wallets
+                </p>
+              </div>
+              <div className={`p-8 rounded-2xl border text-center transition-all duration-300 hover:shadow-lg ${
+                theme === 'dark'
+                  ? 'bg-gradient-to-br from-blue-700/20 to-purple-700/20 border-blue-600/30'
+                  : 'bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200/50'
+              }`}>
+                <div className="text-5xl mb-4">💸</div>
+                <h4 className={`text-xl font-bold mb-2 ${
+                  theme === 'dark' ? 'text-blue-300' : 'text-blue-700'
+                }`}>
+                  Funds Going Out
+                </h4>
+                <div className={`text-4xl md:text-5xl font-bold ${
+                  theme === 'dark' ? 'text-blue-100' : 'text-blue-800'
+                }`}>
+                  ${formatNumber(stats.fundsOut)}
+                </div>
+                <p className={`text-sm mt-2 ${
+                  theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                }`}>
+                  Total withdrawals processed
+                </p>
               </div>
             </div>
           </div>
