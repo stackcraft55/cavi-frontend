@@ -289,6 +289,8 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
         if (selectedWallet?.id === walletId) {
           setSelectedWallet({ ...selectedWallet, name: newWalletName.trim() })
         }
+        // Dispatch event to notify other tabs
+        window.dispatchEvent(new CustomEvent('walletRenamed', { detail: { walletType: 'A', walletId } }))
       } else if (walletType === 'B') {
         // Update created wallet note
         await createdWalletAPI.updateCreatedWalletNote(walletId, newWalletName.trim())
@@ -298,6 +300,8 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
         if (selectedWallet?.id === walletId) {
           setSelectedWallet({ ...selectedWallet, name: newWalletName.trim() })
         }
+        // Dispatch event to notify other tabs
+        window.dispatchEvent(new CustomEvent('walletRenamed', { detail: { walletType: 'B', walletId } }))
       }
       setRenamingWallet(null)
       setNewWalletName('')

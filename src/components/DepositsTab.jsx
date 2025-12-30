@@ -109,6 +109,17 @@ export default function DepositsTab({ theme = 'dark', user = null }) {
     }
     
     fetchConnectedWallets()
+    
+    // Listen for wallet rename events to refresh the list
+    const handleWalletRename = () => {
+      fetchConnectedWallets()
+    }
+    
+    window.addEventListener('walletRenamed', handleWalletRename)
+    
+    return () => {
+      window.removeEventListener('walletRenamed', handleWalletRename)
+    }
   }, [activeNetwork, user])
 
   // Fetch created wallets (Wallet B) from backend, filtered by active network
@@ -122,12 +133,13 @@ export default function DepositsTab({ theme = 'dark', user = null }) {
         if (response.wallets && response.wallets.length > 0) {
           const walletNames = ['Business', 'Operations', 'Development', 'Marketing', 'Reserve', 'Staking', 'Trading', 'Savings', 'Investment', 'Personal']
           const transformedWallets = response.wallets.map((wallet, index) => {
-            const randomName = walletNames[index % walletNames.length] + ` Wallet ${index + 1}`
+            // Use note if available, otherwise generate default name
+            const walletName = wallet.note || (walletNames[index % walletNames.length] + ` Wallet ${index + 1}`)
             const createdDate = new Date(wallet.createdAt).toISOString().split('T')[0]
             
             return {
               id: wallet.id || wallet._id,
-              name: randomName,
+              name: walletName,
               address: wallet.address,
               balance: '0.00 ETH', // Default balance, can be fetched separately
               createdDate: createdDate
@@ -144,6 +156,17 @@ export default function DepositsTab({ theme = 'dark', user = null }) {
     }
     
     fetchCreatedWallets()
+    
+    // Listen for wallet rename events to refresh the list
+    const handleWalletRename = () => {
+      fetchCreatedWallets()
+    }
+    
+    window.addEventListener('walletRenamed', handleWalletRename)
+    
+    return () => {
+      window.removeEventListener('walletRenamed', handleWalletRename)
+    }
   }, [activeNetwork])
 
   // Fetch native balance for wallet A when selected
