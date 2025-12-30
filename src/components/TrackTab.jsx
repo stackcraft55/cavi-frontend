@@ -3,6 +3,7 @@ import { useWalletContext } from '../contexts/WalletContext'
 import { createdWalletAPI, connectedWalletAPI, withdrawAPI } from '../api/api'
 import { networkToBlockchain } from '../utils/tokenContracts'
 import { getNativeBalance, getTransactionHistory, getTokenBalances } from '../utils/alchemyTransactions'
+import { getUSDCUSDTBalances } from '../utils/tokenBalances'
 
 export default function TrackTab({ theme = 'dark', setActiveTab }) {
   const [selectedWallet, setSelectedWallet] = useState(null)
@@ -22,6 +23,8 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
   const [loadingWallets, setLoadingWallets] = useState(true)
   const [renamingWallet, setRenamingWallet] = useState(null)
   const [newWalletName, setNewWalletName] = useState('')
+  const [walletBalances, setWalletBalances] = useState(null) // { native, usdc, usdt, nativeSymbol }
+  const [loadingBalances, setLoadingBalances] = useState(false)
   const { activeNetwork } = useWalletContext()
 
   // Fetch connected wallets (Wallet A) from backend, filtered by active network
@@ -172,6 +175,47 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
     fetchTransactions()
     // Only depend on selectedWallet.id and address, not the entire object to prevent infinite loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWallet?.id, selectedWallet?.address, activeNetwork])
+
+  // Fetch native and token balances when wallet is selected
+  useEffect(() => {
+    const fetchBalances = async () => {
+      if (selectedWallet && selectedWallet.address) {
+        setLoadingBalances(true)
+        try {
+          const blockchain = networkToBlockchain[activeNetwork] || 'ethereum'
+          
+          const nativeSymbols = {
+            ethereum: 'ETH',
+            bsc: 'BNB',
+            tron: 'TRX',
+            solana: 'SOL'
+          }
+          
+          // Fetch native and token balances
+          const [nativeBalance, tokenBalances] = await Promise.all([
+            getNativeBalance(selectedWallet.address, blockchain),
+            getUSDCUSDTBalances(selectedWallet.address, blockchain)
+          ])
+          
+          setWalletBalances({
+            native: nativeBalance || '0',
+            nativeSymbol: nativeSymbols[blockchain] || 'ETH',
+            usdc: tokenBalances.USDC || '0',
+            usdt: tokenBalances.USDT || '0'
+          })
+        } catch (error) {
+          console.error('Error fetching balances:', error)
+          setWalletBalances(null)
+        } finally {
+          setLoadingBalances(false)
+        }
+      } else {
+        setWalletBalances(null)
+      }
+    }
+    
+    fetchBalances()
   }, [selectedWallet?.id, selectedWallet?.address, activeNetwork])
 
   // Fetch withdrawals when wallet is selected
@@ -609,12 +653,82 @@ export default function TrackTab({ theme = 'dark', setActiveTab }) {
         {selectedWallet ? (
           <div className={`p-6 border-b flex-shrink-0 ${theme === 'dark' ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
             <div className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{selectedWallet.name}</div>
-            <div className={`text-sm font-mono mb-2 break-all px-3 py-2 rounded-lg border ${
+            <div className={`text-sm font-mono mb-3 break-all px-3 py-2 rounded-lg border ${
               theme === 'dark' 
                 ? 'text-gray-300 bg-gray-700/50 border-gray-600' 
                 : 'text-gray-600 bg-gray-50 border-gray-200'
             }`}>{selectedWallet.address}</div>
-            <div className="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#667eea] to-[#764ba2]">Balance: {selectedWallet.balance}</div>
+            
+            {/* Balances Section */}
+            {loadingBalances ? (
+              <div className="flex items-center gap-2">
+                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-[#667eea]"></div>
+                <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Loading balances...</span>
+              </div>
+            ) : walletBalances ? (
+              <div className="space-y-3">
+                {/* Native Balance */}
+                <div className={`p-3 rounded-xl border ${
+                  theme === 'dark' 
+                    ? 'bg-gray-700/30 border-gray-600/50' 
+                    : 'bg-gray-50 border-gray-200/50'
+                }`}>
+                  <div className={`text-xs mb-1 uppercase tracking-wider ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    Native ({walletBalances.nativeSymbol})
+                  </div>
+                  <div className={`text-lg font-bold ${
+                    theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                  }`}>
+                    {walletBalances.native} {walletBalances.nativeSymbol}
+                  </div>
+                </div>
+                
+                {/* Token Balances Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* USDC */}
+                  <div className={`p-3 rounded-xl border ${
+                    theme === 'dark' 
+                      ? 'bg-gray-700/30 border-gray-600/50' 
+                      : 'bg-gray-50 border-gray-200/50'
+                  }`}>
+                    <div className={`text-xs mb-1 uppercase tracking-wider ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      USDC
+                    </div>
+                    <div className={`text-lg font-bold ${
+                      theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                    }`}>
+                      {walletBalances.usdc} USDC
+                    </div>
+                  </div>
+                  
+                  {/* USDT */}
+                  <div className={`p-3 rounded-xl border ${
+                    theme === 'dark' 
+                      ? 'bg-gray-700/30 border-gray-600/50' 
+                      : 'bg-gray-50 border-gray-200/50'
+                  }`}>
+                    <div className={`text-xs mb-1 uppercase tracking-wider ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      USDT
+                    </div>
+                    <div className={`text-lg font-bold ${
+                      theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                    }`}>
+                      {walletBalances.usdt} USDT
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                Unable to load balances
+              </div>
+            )}
           </div>
         ) : (
           <div className={`p-12 text-center ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
