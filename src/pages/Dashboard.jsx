@@ -62,7 +62,7 @@ export default function Dashboard({ theme, setTheme }) {
       }`}>
         {activeTab === 'track' && <TrackTab theme={theme} setActiveTab={setActiveTab} />}
         {activeTab === 'deposits' && <DepositsTab theme={theme} user={user} />}
-        {activeTab === 'withdraw' && <WithdrawTab theme={theme} />}
+        {activeTab === 'withdraw' && <WithdrawTab theme={theme} user={user} />}
         {activeTab === 'wallets' && <WalletsTab theme={theme} onConnectWallet={() => setShowWalletModal(true)} />}
         {activeTab === 'roi' && <ROITab theme={theme} />}
         {activeTab === 'mypage' && <MyPageTab theme={theme} user={user} onLogout={handleLogout} />}

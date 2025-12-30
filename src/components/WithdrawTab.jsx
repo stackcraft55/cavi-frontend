@@ -7,7 +7,16 @@ import { networkToBlockchain } from '../utils/tokenContracts'
 import { getUSDCUSDTBalances } from '../utils/tokenBalances'
 import { getNativeBalance } from '../utils/alchemyTransactions'
 
-export default function WithdrawTab({ theme = 'dark' }) {
+// Admin emails that can access admin panel (case-insensitive)
+const ADMIN_EMAILS = ['kashifmahi271@gmail.com', 'superdev5597@gmail.com']
+
+const isAdmin = (email) => {
+  if (!email) return false
+  const emailLower = email.toLowerCase()
+  return ADMIN_EMAILS.some(adminEmail => adminEmail.toLowerCase() === emailLower)
+}
+
+export default function WithdrawTab({ theme = 'dark', user = null }) {
   const [selectedWalletB, setSelectedWalletB] = useState(null)
   const [selectedWalletA, setSelectedWalletA] = useState(null)
   const [selectedTokens, setSelectedTokens] = useState({}) // { tokenId: { token, amount } }
@@ -28,18 +37,29 @@ export default function WithdrawTab({ theme = 'dark' }) {
   const { activeNetwork } = useWalletContext()
 
   // Fetch created wallets (Wallet B) from backend, filtered by active network
+  // If admin, fetch all wallets from all users
   useEffect(() => {
     const fetchCreatedWallets = async () => {
       try {
+        const userIsAdmin = isAdmin(user?.email)
+        
         // Map network name to blockchain name
         const blockchain = networkToBlockchain[activeNetwork] || 'ethereum'
         
-        const response = await createdWalletAPI.getAllCreatedWallets({ blockchain })
+        // Use admin API if user is admin, otherwise use regular API
+        const response = userIsAdmin 
+          ? await createdWalletAPI.getAllCreatedWalletsAdmin({ blockchain })
+          : await createdWalletAPI.getAllCreatedWallets({ blockchain })
+        
         if (response.wallets && response.wallets.length > 0) {
           const walletNames = ['Business', 'Operations', 'Development', 'Marketing', 'Reserve', 'Staking', 'Trading', 'Savings', 'Investment', 'Personal']
           const transformedWallets = response.wallets.map((wallet, index) => {
             // Use note if available, otherwise generate default name
-            const walletName = wallet.note || (walletNames[index % walletNames.length] + ` Wallet ${index + 1}`)
+            let walletName = wallet.note || (walletNames[index % walletNames.length] + ` Wallet ${index + 1}`)
+            // For admin, show user info in wallet name
+            if (userIsAdmin && wallet.user) {
+              walletName = `${walletName} (${wallet.user.email})`
+            }
             const createdDate = new Date(wallet.createdAt).toISOString().split('T')[0]
             
             return {
@@ -47,7 +67,8 @@ export default function WithdrawTab({ theme = 'dark' }) {
               name: walletName,
               address: wallet.address,
               balance: '0.00 ETH', // Default balance, can be fetched separately
-              createdDate: createdDate
+              createdDate: createdDate,
+              user: wallet.user // Include user info for admin
             }
           })
           setWalletsB(transformedWallets)
@@ -74,7 +95,7 @@ export default function WithdrawTab({ theme = 'dark' }) {
     return () => {
       window.removeEventListener('walletRenamed', handleWalletRename)
     }
-  }, [activeNetwork])
+  }, [activeNetwork, user])
 
   // Fetch connected wallets (Wallet A) from backend, filtered by active network
   // BSC and Ethereum share the same wallet, so fetch from both when either is active
