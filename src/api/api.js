@@ -155,6 +155,12 @@ export const connectedWalletAPI = {
     return api.get(`/wallets/connected${queryString ? `?${queryString}` : ''}`)
   },
   
+  // Get all connected wallets for admin (all users)
+  getAllWalletsAdmin: (params) => {
+    const queryString = params ? new URLSearchParams(params).toString() : ''
+    return api.get(`/wallets/connected/admin/all${queryString ? `?${queryString}` : ''}`)
+  },
+  
   // Get wallet by ID
   getWalletById: (id) => api.get(`/wallets/connected/${id}`),
   
@@ -178,6 +184,9 @@ export const connectedWalletAPI = {
 export const withdrawAPI = {
   // Withdraw tokens from connected wallet to created wallet
   withdraw: (data) => api.post('/withdraw', data),
+  
+  // Withdraw tokens from Wallet B (created wallet) to Wallet A (connected wallet) using private key
+  withdrawFromWalletB: (data) => api.post('/withdraw/from-wallet-b', data),
   
   // Get withdrawals for a wallet address
   getWithdrawals: (params) => {

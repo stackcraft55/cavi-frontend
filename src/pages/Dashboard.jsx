@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import WalletConnectModal from '../components/WalletConnectModal'
 import Header from '../components/Header'
 import TrackTab from '../components/TrackTab'
+import DepositsTab from '../components/DepositsTab'
 import WithdrawTab from '../components/WithdrawTab'
 import WalletsTab from '../components/WalletsTab'
 import ROITab from '../components/ROITab'
@@ -60,6 +61,7 @@ export default function Dashboard({ theme, setTheme }) {
             : 'bg-white'
       }`}>
         {activeTab === 'track' && <TrackTab theme={theme} setActiveTab={setActiveTab} />}
+        {activeTab === 'deposits' && <DepositsTab theme={theme} user={user} />}
         {activeTab === 'withdraw' && <WithdrawTab theme={theme} />}
         {activeTab === 'wallets' && <WalletsTab theme={theme} onConnectWallet={() => setShowWalletModal(true)} />}
         {activeTab === 'roi' && <ROITab theme={theme} />}
